@@ -125,6 +125,8 @@ const msg=(t)=>{const m=$("#msg");m.textContent=t||"";};
 let MODE="ficha";
 let orient={a:0,b:0,g:0};      // valores crudos del sensor
 let smooth={a:0,b:0,g:0};      // suavizados para el render
+let sensorLive=false;          // ¿el giroscopio emite datos?
+let drag={on:false,x:0,y:0,rx:0,ry:0}; // fallback táctil si no hay sensor
 
 /* ---------- 1. CÁMARA · getUserMedia ---------- */
 async function startCamera(){
@@ -155,13 +157,37 @@ async function startOrientation(){
       if(p!=="granted"){msg("SENSORES DENEGADOS");setTimeout(()=>msg(""),2600);}
     }catch(e){/* Android u otros: no requiere permiso */}
   }
-  window.addEventListener("deviceorientation",(ev)=>{
-    if(ev.alpha==null)return;
-    orient.a=ev.alpha; orient.b=ev.beta; orient.g=ev.gamma;
-    $("#oa").textContent=ev.alpha.toFixed(1);
-    $("#ob").textContent=ev.beta.toFixed(1);
-    $("#og").textContent=ev.gamma.toFixed(1);
-  },true);
+  let gotEvent=false;
+  const onOrient=(ev)=>{
+    // No descartar el evento aunque alpha sea null: en iOS beta/gamma llegan
+    // igualmente y son los que usamos para rotar. alpha solo alimenta el yaw.
+    const b=(ev.beta ==null?0:ev.beta);
+    const g=(ev.gamma==null?0:ev.gamma);
+    // alpha: en iOS suele venir null; webkitCompassHeading es el sustituto.
+    let a=ev.alpha;
+    if(a==null && typeof ev.webkitCompassHeading==="number") a=360-ev.webkitCompassHeading;
+    if(a==null) a=0;
+    // Solo consideramos "vivo" el sensor si beta o gamma traen datos reales.
+    if(ev.beta!=null || ev.gamma!=null){
+      gotEvent=true; sensorLive=true;
+      orient.a=a; orient.b=b; orient.g=g;
+      $("#oa").textContent=a.toFixed(1);
+      $("#ob").textContent=b.toFixed(1);
+      $("#og").textContent=g.toFixed(1);
+    }
+  };
+  // 'deviceorientation' es el estándar; algunos navegadores solo emiten
+  // 'deviceorientationabsolute'. Escuchamos ambos.
+  window.addEventListener("deviceorientation",onOrient,true);
+  window.addEventListener("deviceorientationabsolute",onOrient,true);
+  // Si en 1.2 s no ha llegado ni un evento, el sensor no está disponible:
+  // avisamos en pantalla en vez de fallar en silencio.
+  setTimeout(()=>{
+    if(!gotEvent){
+      msg("SIN GIROSCOPIO · usa arrastre táctil");
+      setTimeout(()=>msg(""),3200);
+    }
+  },1200);
 }
 
 /* ---------- 3. ESCENA 3D · WebGL / Three.js ---------- */
@@ -256,12 +282,18 @@ setInterval(()=>{
 /* ---------- loop ---------- */
 function loop(){
   requestAnimationFrame(loop);
-  // suavizado exponencial del sensor → evita jitter en el render
-  smooth.b+=(orient.b-smooth.b)*0.12;
-  smooth.g+=(orient.g-smooth.g)*0.12;
-  // mapeo IMU → rotación de la escena (orbitar moviendo el móvil)
-  world.rotation.y=THREE.MathUtils.degToRad(smooth.g)*1.4;
-  world.rotation.x=THREE.MathUtils.degToRad(smooth.b-45)*0.6;
+  if(sensorLive){
+    // suavizado exponencial del sensor → evita jitter en el render
+    smooth.b+=(orient.b-smooth.b)*0.12;
+    smooth.g+=(orient.g-smooth.g)*0.12;
+    // mapeo IMU → rotación de la escena (orbitar moviendo el móvil)
+    world.rotation.y=THREE.MathUtils.degToRad(smooth.g)*1.4;
+    world.rotation.x=THREE.MathUtils.degToRad(smooth.b-45)*0.6;
+  }else{
+    // fallback: rotación por arrastre táctil
+    world.rotation.y+=(drag.ry-world.rotation.y)*0.15;
+    world.rotation.x+=(drag.rx-world.rotation.x)*0.15;
+  }
 
   ficha.position.y=Math.sin(Date.now()*0.0012)*0.12;   // flotación
   ring.rotation.z+=0.01;
@@ -269,6 +301,23 @@ function loop(){
   renderer.render(scene,camera);
 }
 loop();
+
+/* ---------- fallback táctil (si no hay giroscopio) ---------- */
+const stage=$("#stage");
+function dragStart(x,y){drag.on=true;drag.x=x;drag.y=y;}
+function dragMove(x,y){
+  if(!drag.on||sensorLive)return;
+  drag.ry+=(x-drag.x)*0.008;
+  drag.rx+=(y-drag.y)*0.008;
+  drag.x=x;drag.y=y;
+}
+function dragEnd(){drag.on=false;}
+stage.addEventListener("touchstart",e=>{const t=e.touches[0];dragStart(t.clientX,t.clientY);},{passive:true});
+stage.addEventListener("touchmove",e=>{const t=e.touches[0];dragMove(t.clientX,t.clientY);},{passive:true});
+stage.addEventListener("touchend",dragEnd);
+stage.addEventListener("mousedown",e=>dragStart(e.clientX,e.clientY));
+window.addEventListener("mousemove",e=>dragMove(e.clientX,e.clientY));
+window.addEventListener("mouseup",dragEnd);
 
 /* ---------- arranque tras gesto ---------- */
 $("#go").addEventListener("click",async()=>{
