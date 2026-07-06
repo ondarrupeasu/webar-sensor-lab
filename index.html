@@ -94,6 +94,7 @@
     <div>α yaw&nbsp;&nbsp;<span class="v" id="oa">—</span>°</div>
     <div>β pitch <span class="v" id="ob">—</span>°</div>
     <div>γ roll&nbsp;&nbsp;<span class="v" id="og">—</span>°</div>
+    <div id="dbg" style="margin-top:8px;color:var(--amber);font-size:9px;max-width:60vw;line-height:1.5">esperando sensor…</div>
   </div>
 </div>
 
@@ -148,46 +149,67 @@ async function startCamera(){
 }
 
 /* ---------- 2. GIROSCOPIO · DeviceOrientation ---------- */
+let evtCount=0;              // nº de eventos recibidos (diagnóstico)
+let dbgLine="";             // texto de diagnóstico en pantalla
+function dbg(t){dbgLine=t;$("#dbg").textContent=t;}
+
 async function startOrientation(){
-  // iOS 13+ exige permiso explícito tras gesto de usuario (aquí, el botón).
-  if(typeof DeviceOrientationEvent!=="undefined" &&
-     typeof DeviceOrientationEvent.requestPermission==="function"){
+  const hasReq=(typeof DeviceOrientationEvent!=="undefined" &&
+                typeof DeviceOrientationEvent.requestPermission==="function");
+  let permState="n/a";      // en Android normalmente no hay requestPermission
+  if(hasReq){
     try{
-      const p=await DeviceOrientationEvent.requestPermission();
-      if(p!=="granted"){msg("SENSORES DENEGADOS");setTimeout(()=>msg(""),2600);}
-    }catch(e){/* Android u otros: no requiere permiso */}
+      permState=await DeviceOrientationEvent.requestPermission();
+    }catch(e){permState="error:"+e.name;}
   }
-  let gotEvent=false;
+
   const onOrient=(ev)=>{
-    // No descartar el evento aunque alpha sea null: en iOS beta/gamma llegan
-    // igualmente y son los que usamos para rotar. alpha solo alimenta el yaw.
-    const b=(ev.beta ==null?0:ev.beta);
-    const g=(ev.gamma==null?0:ev.gamma);
-    // alpha: en iOS suele venir null; webkitCompassHeading es el sustituto.
-    let a=ev.alpha;
-    if(a==null && typeof ev.webkitCompassHeading==="number") a=360-ev.webkitCompassHeading;
-    if(a==null) a=0;
-    // Solo consideramos "vivo" el sensor si beta o gamma traen datos reales.
-    if(ev.beta!=null || ev.gamma!=null){
-      gotEvent=true; sensorLive=true;
+    evtCount++;
+    // beta/gamma son los ejes que usamos para rotar. En iOS pueden llegar
+    // sin alpha; en Android a veces solo llegan vía 'deviceorientationabsolute'.
+    const hasBG=(ev.beta!=null || ev.gamma!=null);
+    if(hasBG){
+      sensorLive=true;
+      const b=(ev.beta ==null?0:ev.beta);
+      const g=(ev.gamma==null?0:ev.gamma);
+      let a=ev.alpha;
+      if(a==null && typeof ev.webkitCompassHeading==="number") a=360-ev.webkitCompassHeading;
+      if(a==null) a=0;
       orient.a=a; orient.b=b; orient.g=g;
       $("#oa").textContent=a.toFixed(1);
       $("#ob").textContent=b.toFixed(1);
       $("#og").textContent=g.toFixed(1);
     }
+    // diagnóstico en vivo: se ve si llegan eventos pero sin datos útiles
+    dbg(`evt:${evtCount} perm:${permState} a:${ev.alpha==null?"·":"ok"} `+
+        `b:${ev.beta==null?"·":"ok"} g:${ev.gamma==null?"·":"ok"} abs:${ev.absolute?"y":"n"}`);
   };
-  // 'deviceorientation' es el estándar; algunos navegadores solo emiten
-  // 'deviceorientationabsolute'. Escuchamos ambos.
-  window.addEventListener("deviceorientation",onOrient,true);
-  window.addEventListener("deviceorientationabsolute",onOrient,true);
-  // Si en 1.2 s no ha llegado ni un evento, el sensor no está disponible:
-  // avisamos en pantalla en vez de fallar en silencio.
+
+  window.addEventListener("deviceorientation",onOrient);          // sin capture
+  window.addEventListener("deviceorientationabsolute",onOrient);
+
+  // Reintento de permiso: en iOS, si el 1er requestPermission no disparó
+  // eventos (toggle "Movimiento y orientación" off), avisamos con causa.
   setTimeout(()=>{
-    if(!gotEvent){
-      msg("SIN GIROSCOPIO · usa arrastre táctil");
-      setTimeout(()=>msg(""),3200);
+    if(evtCount===0){
+      if(hasReq && permState==="granted"){
+        dbg("permiso OK pero 0 eventos → Ajustes › Safari › Movimiento y orientación");
+        msg("SENSOR BLOQUEADO EN AJUSTES · usa arrastre");
+      }else if(hasReq && permState!=="granted"){
+        dbg("permiso: "+permState);
+        msg("PERMISO DE SENSOR DENEGADO · usa arrastre");
+      }else{
+        dbg("0 eventos · sin requestPermission (Android)");
+        msg("SIN GIROSCOPIO · usa arrastre táctil");
+      }
+      setTimeout(()=>msg(""),3600);
+    }else if(!sensorLive){
+      // llegan eventos pero beta/gamma null → caso Chrome que describes
+      dbg(`${evtCount} eventos pero beta/gamma null → sensor no expone orientación`);
+      msg("SENSOR SIN ORIENTACIÓN · usa arrastre");
+      setTimeout(()=>msg(""),3600);
     }
-  },1200);
+  },1400);
 }
 
 /* ---------- 3. ESCENA 3D · WebGL / Three.js ---------- */
