@@ -344,8 +344,13 @@ window.addEventListener("mouseup",dragEnd);
 /* ---------- arranque tras gesto ---------- */
 $("#go").addEventListener("click",async()=>{
   $("#gate").style.display="none";
-  await startCamera();
+  // El permiso de orientación DEBE pedirse primero, mientras la activación
+  // de usuario (transient activation) del clic sigue viva. getUserMedia
+  // suspende la ejecución esperando su propio diálogo y consumiría esa
+  // ventana, provocando que requestPermission() devuelva 'denied' sin
+  // llegar a mostrarse. Orden correcto: sensores → cámara.
   await startOrientation();
+  await startCamera();
   setMode("ficha");
 });
 </script>
