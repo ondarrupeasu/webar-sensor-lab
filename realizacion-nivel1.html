@@ -36,8 +36,15 @@
   .invbtn .meta{font-size:9.5px;letter-spacing:.03em;opacity:.8;display:block;margin-top:3px}
   .invbtn .dot{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
   button{font-family:var(--mono);cursor:pointer}
-  #reset{margin-top:auto;background:transparent;color:var(--dim);border:1px solid var(--line);padding:11px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:.18s}
+  #validate{margin-top:auto;background:var(--cyan);color:var(--bg);border:0;padding:13px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:bold;transition:.18s}
+  #validate:active{opacity:.85}
+  #reset{margin-top:8px;background:transparent;color:var(--dim);border:1px solid var(--line);padding:11px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:.18s}
   #reset:active{background:var(--line);color:var(--txt)}
+  #win .res{text-align:left;font-size:12px;line-height:1.7;color:var(--dim);max-width:400px;margin-bottom:24px}
+  #win .res .bad{color:var(--red);margin-bottom:4px}
+  #win .res .good{color:var(--cyan)}
+  #win .btns{display:flex;gap:12px}
+  #win .ghost{color:var(--dim);border-color:var(--line)}
 
   /* ---- plano ---- */
   #stage{flex:1;background:var(--bg);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
@@ -87,19 +94,23 @@
 
     <div class="block">
       <h2>Cómo se juega</h2>
-      <p class="hint"><b style="color:var(--txt)">Elige el tipo de cable</b> arriba y arrastra desde el <b style="color:var(--txt)">objetivo</b> de la cámara a una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo (suma metros); no puede cruzar columnas ni público. Toca un quiebre para quitarlo. La <b style="color:var(--txt)">fibra</b> llega lejos pero gasta 2 conversores y cuesta más. No te pases del <b style="color:var(--txt)">presupuesto</b>. Pellizca para acercar.</p>
+      <p class="hint"><b style="color:var(--txt)">Elige el tipo de cable</b> arriba y arrastra desde el <b style="color:var(--txt)">objetivo</b> de la cámara a una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo (suma metros); no puede cruzar columnas ni público. Toca un quiebre para quitarlo. La <b style="color:var(--txt)">fibra</b> llega lejos pero gasta 2 conversores y cuesta más. El cable <b style="color:var(--txt)">no te avisa</b> si supera su límite: debes conocerlo. No te pases del <b style="color:var(--txt)">presupuesto</b>. Cuando lo tengas todo, pulsa <b style="color:var(--txt)">Ya lo tengo</b> para validar. Pellizca para acercar.</p>
     </div>
 
+    <button id="validate">Ya lo tengo · Validar</button>
     <button id="reset">Reiniciar plano</button>
   </aside>
 
   <main id="stage">
     <svg id="plano" xmlns="http://www.w3.org/2000/svg"></svg>
     <div id="win">
-      <div class="k">INSTALACIÓN VÁLIDA</div>
-      <h3>Señal en la mesa ✓</h3>
-      <p id="win-txt"></p>
-      <button id="win-again">Otra vez</button>
+      <div class="k" id="win-k">RESULTADO</div>
+      <h3 id="win-h">—</h3>
+      <div class="res" id="win-res"></div>
+      <div class="btns">
+        <button id="win-again">Reintentar</button>
+        <button id="win-review" class="ghost">Revisar plano</button>
+      </div>
     </div>
   </main>
 </div>
@@ -189,6 +200,7 @@ const cams=LEVEL.cams.map(c=>({...c, port:{x:c.x, y:c.y+4}}));
 let cables=new Array(cams.length).fill(null);
 let curType=Object.keys(LEVEL.cableTypes)[0];     // tipo de cable seleccionado en el inventario
 const ctOf=ci=>LEVEL.cableTypes[cables[ci].type]; // tipo del cable de la cámara ci
+let locked=false;                                 // true tras validar: bloquea ediciones y revela fallos
 
 /* ============================================================
    DIBUJO ESTÁTICO (rejilla, escenario, mesa, cámaras)
@@ -278,7 +290,7 @@ function redrawCables(){
     if(!c)return;
     const p=pathPoints(ci), len=pathLen(ci), ct=ctOf(ci);
     const invalid=cableCross(ci)||len>ct.limite;
-    const col=invalid?css("--red"):css(ct.color);
+    const col=(locked&&invalid)?css("--red"):css(ct.color);   // el color solo revela fallos tras validar
     // segmentos: visible + hit invisible (con índice para insertar quiebre)
     for(let i=0;i<p.length-1;i++){
       const a=p[i], b=p[i+1];
@@ -352,6 +364,10 @@ svg.addEventListener("pointerdown",e=>{
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===2){ startPinch(); return; }        // segundo dedo → pellizco
   if(pointers.size>2) return;
+  if(locked){                                           // instalación validada → solo mirar (pan/zoom)
+    drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty};
+    return;
+  }
   const t=e.target;
   if(t.classList.contains("outport")){                  // nuevo cable
     const ci=+t.dataset.cam;
@@ -408,7 +424,7 @@ function endPointer(e){
   }else if(drag.kind==="wp" && !drag.moved){            // toque sin mover → quitar quiebre
     cables[drag.ci].wps.splice(drag.wp,1);
   }
-  drag=null; redrawCables(); updateHUD(); checkWin();
+  drag=null; redrawCables(); updateHUD();
 }
 svg.addEventListener("pointerup",endPointer);
 svg.addEventListener("pointercancel",endPointer);
@@ -441,20 +457,36 @@ function updateHUD(){
   document.getElementById("s-conn").textContent=`${t.conn} / ${cams.length}`;
   document.getElementById("s-total").textContent=`${t.total.toFixed(0)} m`;
   document.getElementById("s-conv").textContent=`${t.convs}`;
-  const b=document.getElementById("s-budget");
-  b.textContent=`${t.cost.toFixed(0)} / ${LEVEL.budget} €`;
-  b.className="val "+(t.cost>LEVEL.budget?"bad":(t.conn===cams.length?"ok":""));
+  document.getElementById("s-budget").textContent=`${t.cost.toFixed(0)} / ${LEVEL.budget} €`;  // neutro: no revela si te pasas
 }
-function checkWin(){
+function validate(){                                  // "Ya lo tengo": evalúa, explica y bloquea
+  const problemas=[];
+  cables.forEach((c,ci)=>{
+    const name=cams[ci].id;
+    if(!c){ problemas.push(`${name}: sin conectar a la mesa.`); return; }
+    const ct=LEVEL.cableTypes[c.type], len=pathLen(ci);
+    if(cableCross(ci)) problemas.push(`${name}: el cable cruza un obstáculo (columna o público).`);
+    if(len>ct.limite)  problemas.push(`${name}: ${len.toFixed(0)} m con ${ct.nombre} supera su límite de ${ct.limite} m.`);
+  });
   const t=totals();
-  if(t.conn===cams.length && t.allOk && t.within){
+  if(t.cost>LEVEL.budget) problemas.push(`Presupuesto: ${t.cost.toFixed(0)} € superan el tope de ${LEVEL.budget} €.`);
+
+  locked=true; redrawCables();                        // ahora sí: marca en rojo los cables que fallan
+  const ok=problemas.length===0;
+  const k=document.getElementById("win-k");
+  k.textContent=ok?"INSTALACIÓN VÁLIDA":"REVISA LA INSTALACIÓN";
+  k.style.color=ok?css("--cyan"):css("--red");
+  document.getElementById("win-h").textContent=ok?"Señal en la mesa ✓":"Hay fallos que corregir";
+  const res=document.getElementById("win-res");
+  if(ok){
     const sobra=LEVEL.budget-t.cost;
-    document.getElementById("win-txt").innerHTML=
-      `Las ${cams.length} cámaras entregan señal dentro de presupuesto.<br>`+
-      `Coste: <b>${t.cost.toFixed(0)} €</b> · ${t.total.toFixed(0)} m · ${t.convs} conversores.<br>`+
-      `Te sobran <b>${sobra.toFixed(0)} €</b> → puntuación.`;
-    document.getElementById("win").classList.add("show");
+    res.innerHTML=`<div class="good">Las ${cams.length} cámaras entregan señal dentro de presupuesto.</div><br>`+
+      `Coste: <b style="color:var(--txt)">${t.cost.toFixed(0)} €</b> · ${t.total.toFixed(0)} m · ${t.convs} conversores.<br>`+
+      `Puntuación (presupuesto restante): <b style="color:var(--txt)">${sobra.toFixed(0)} €</b>.`;
+  }else{
+    res.innerHTML=problemas.map(p=>`<div class="bad">• ${p}</div>`).join("");
   }
+  document.getElementById("win").classList.add("show");
 }
 
 /* ============================================================
@@ -466,7 +498,7 @@ function buildInv(){                                  // botones de tipo de cabl
     const b=document.createElement("button");
     b.className="invbtn"; b.dataset.type=key;
     b.innerHTML=`<span><span class="nm">${ct.nombre}</span>`+
-      `<span class="meta">≤ ${ct.limite} m · ${ct.eurM} €/m${ct.conv?` · ${ct.conv} conv.`:``}</span></span>`+
+      `<span class="meta">${ct.eurM} €/m${ct.conv?` · ${ct.conv} conv.`:``}</span></span>`+
       `<span class="dot" style="background:var(${ct.color})"></span>`;
     b.addEventListener("click",()=>{curType=key;refreshInv();});
     box.appendChild(b);
@@ -493,11 +525,14 @@ function boot(){
 }
 function reset(){
   cables=new Array(cams.length).fill(null);
+  locked=false;
   document.getElementById("win").classList.remove("show");
   redrawCables(); updateHUD();
 }
 document.getElementById("reset").addEventListener("click",reset);
 document.getElementById("win-again").addEventListener("click",reset);
+document.getElementById("validate").addEventListener("click",validate);
+document.getElementById("win-review").addEventListener("click",()=>document.getElementById("win").classList.remove("show"));
 boot();
 </script>
 </body>
