@@ -281,9 +281,39 @@ const CONCIERTO_N1 = {
   budget: 4200,
 };
 
+const CONCIERTO_N2 = {
+  nombre:  "Concierto · Nivel 2",
+  encargo: "Entra una cámara inalámbrica (steadicam en el foso): no sale cable de ella. Coloca su receptor (RX) dentro del alcance RF y cablea desde el RX a la cabina. El resto de cámaras, como antes.",
+  planoM:  { w:150, h:90 },
+  escalaPxM: 7.5,
+  mesa: { x:138, y:45, inputs:4, inFmt:"sdi", faces:"left" },
+  cams: [
+    { id:"CAM 1", x:32, y:45, out:"sdi", wireless:true, rxFmt:"sdi", range:85, txEur:700 },  // steadicam inalámbrica
+    { id:"CAM 2", x:30, y:18, out:"sdi" },   // foso, cableada → fibra
+    { id:"CAM 3", x:118, y:30, out:"sdi" },  // fondo → SDI
+    { id:"CAM 4", x:118, y:66, out:"sdi" },  // fondo → SDI
+  ],
+  zones: [
+    { shape:"rect",   kind:"stage",   x:13,  y:45, w:18, h:74, label:"ESCENARIO" },
+    { shape:"rect",   kind:"pit",     x:25,  y:45, w:6,  h:70, label:"BARRERA" },
+    { shape:"rect",   kind:"seating", x:72,  y:45, w:76, h:62, label:"PÚBLICO (DE PIE)" },
+    { shape:"circle", kind:"column",  x:60,  y:10, r:3, label:"TORRE PA" },
+    { shape:"circle", kind:"column",  x:60,  y:80, r:3, label:"TORRE PA" },
+    { shape:"rect",   kind:"walk",    x:126, y:45, w:8,  h:74, label:"PASILLO" },
+  ],
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    sdi:   { nombre:"HD-SDI", signal:"sdi", limite:100, eurM:3,  conv:0, color:"--cyan"  },
+    fibra: { nombre:"Fibra",  signal:"sdi", limite:500, eurM:10, conv:2, color:"--fiber" },
+  },
+  converters: {},
+  convEur: 250,
+  budget: 3200,
+};
+
 const GAME = {
   teatro:    { nombre:"Teatro",     sub:"Escenario a la izquierda, foso, butacas que rodear. Cabina al fondo. Sube: columnas, más cámaras y formatos mixtos.", niveles:[ TEATRO_N1, TEATRO_N2, TEATRO_N3 ] },
-  concierto: { nombre:"Concierto",  sub:"Grandes distancias (fibra), público de pie enorme, torres de PA. Escenario a la izquierda.", niveles:[ CONCIERTO_N1 ] },
+  concierto: { nombre:"Concierto",  sub:"Grandes distancias (fibra), público de pie enorme, torres de PA. Escenario a la izquierda.", niveles:[ CONCIERTO_N1, CONCIERTO_N2 ] },
   setTV:     { nombre:"Set de TV",  sub:"Formatos mixtos y conversores, control en sala aparte. Mesa arriba, cámaras abajo.", niveles:[], soon:true },
 };
 
@@ -299,7 +329,7 @@ const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 let LEVEL=null, S=10, inputs=[], cams=[], VBW=0, VBH=0;
 const m=v=>v*S;                                   // metros → px de dibujo (lee la S actual)
 
-let cables=[], camConv=[], inConv=[], ramps=[];
+let cables=[], camConv=[], inConv=[], ramps=[], rx={};   // rx[ci]={x,y} = receptor de la cámara inalámbrica ci
 let curType=null, curConv=null, mode="cable", locked=false;
 const ctOf=ci=>LEVEL.cableTypes[cables[ci].type];
 
@@ -397,19 +427,24 @@ function drawStatic(){
 
   // cámaras (símbolo de plano: cuerpo + triángulo de visión hacia el escenario, a la izquierda)
   cams.forEach((c,i)=>{
+    if(c.wireless) el("circle",{cx:m(c.x),cy:m(c.y),r:m(c.range),fill:"none",stroke:css("--line"),"stroke-width":1,"stroke-dasharray":"2 6"},gStatic);  // alcance RF (guía)
     el("path",{d:`M${m(c.x-1.8)},${m(c.y)} L${m(c.x-6.5)},${m(c.y-3)} L${m(c.x-6.5)},${m(c.y+3)} Z`,fill:"rgba(63,224,208,.10)",stroke:css("--cyan"),"stroke-width":1},gStatic);
     el("rect",{x:m(c.x-1.8),y:m(c.y-1.8),width:m(3.8),height:m(3.6),rx:m(0.5),fill:css("--panel"),stroke:css("--cyan"),"stroke-width":1.7},gStatic);
     const lb=el("text",{x:m(c.x),y:m(c.y)-m(3.8),fill:css("--txt"),"font-size":11,"letter-spacing":"0.5","text-anchor":"middle"},gStatic);
-    lb.textContent=c.id+" · "+c.out.toUpperCase();
-    el("circle",{cx:m(c.port.x),cy:m(c.port.y),r:6,fill:css("--cyan")},gPorts);
-    el("circle",{cx:m(c.port.x),cy:m(c.port.y),r:16,fill:"transparent",style:"cursor:grab","data-cam":i,class:"outport"},gPorts);
+    lb.textContent=c.id+(c.wireless?" · RF→"+c.rxFmt.toUpperCase():" · "+c.out.toUpperCase());
+    if(c.wireless){
+      const tx=el("text",{x:m(c.x),y:m(c.y)+m(4),fill:css("--amber"),"font-size":8,"letter-spacing":"1","text-anchor":"middle"},gStatic); tx.textContent="TX";
+    }else{
+      el("circle",{cx:m(c.port.x),cy:m(c.port.y),r:6,fill:css("--cyan")},gPorts);
+      el("circle",{cx:m(c.port.x),cy:m(c.port.y),r:16,fill:"transparent",style:"cursor:grab","data-cam":i,class:"outport"},gPorts);
+    }
   });
 }
 
 /* ============================================================
    CABLES + VALIDACIÓN
    ============================================================ */
-function pathPoints(ci){ const c=cables[ci]; return [cams[ci].port, ...c.wps, inputs[c.input]]; }
+function pathPoints(ci){ const c=cables[ci], src=cams[ci].wireless?rx[ci]:cams[ci].port; return [src, ...c.wps, inputs[c.input]]; }
 function pathLen(ci){ const p=pathPoints(ci); let L=0; for(let i=0;i<p.length-1;i++)L+=dist(p[i],p[i+1]); return L; }
 const aisleAxis=z=> z.w>=z.h ? "x" : "y";          // eje largo del pasillo (el pasacables cruza el corto)
 const inRampAt=(zi,z,x,y)=>{ const c=aisleAxis(z)==="x"?x:y; return ramps.some(r=>r.zi===zi && Math.abs(c-r.along)<=LEVEL.rampW/2); };
@@ -480,10 +515,22 @@ function redrawCables(){
   };
   camConv.forEach((k,ci)=>{ if(k){const cv=LEVEL.converters[k]; badge(cams[ci].port, cv.tag, cv.from!==cams[ci].out);} });
   inConv.forEach((k,j)=>{ if(k){const cv=LEVEL.converters[k]; badge(inputs[j], cv.tag, cv.to!==LEVEL.mesa.inFmt);} });
+  // cámaras inalámbricas: enlace RF + receptor RX (con su puerto de salida)
+  cams.forEach((cam,ci)=>{
+    if(!cam.wireless || !rx[ci]) return;
+    const r=rx[ci], bad=locked && dist(cam,r)>cam.range;
+    const col=bad?css("--red"):css("--amber");
+    el("line",{x1:m(cam.x),y1:m(cam.y),x2:m(r.x),y2:m(r.y),stroke:col,"stroke-width":1.5,"stroke-dasharray":"2 4","pointer-events":"none"},gCables);
+    el("rect",{x:m(r.x)-10,y:m(r.y)-8,width:20,height:16,rx:3,fill:css("--panel"),stroke:col,"stroke-width":1.5,"pointer-events":"none"},gCables);
+    const t=el("text",{x:m(r.x),y:m(r.y)+4,fill:col,"font-size":9,"font-weight":"bold","text-anchor":"middle","pointer-events":"none"},gCables); t.textContent="RX";
+    el("circle",{cx:m(r.x),cy:m(r.y),r:16,fill:"transparent",style:"cursor:grab","data-cam":ci,class:"outport"},gCables);
+  });
 }
 function effOut(ci){
-  const k=camConv[ci]; if(!k) return cams[ci].out;
-  const cv=LEVEL.converters[k]; return cv.from===cams[ci].out ? cv.to : null;
+  const cam=cams[ci];
+  if(cam.wireless) return cam.rxFmt;                 // el receptor RX entrega este formato
+  const k=camConv[ci]; if(!k) return cam.out;
+  const cv=LEVEL.converters[k]; return cv.from===cam.out ? cv.to : null;
 }
 function effIn(j){
   const k=inConv[j]; if(!k) return LEVEL.mesa.inFmt;
@@ -547,10 +594,17 @@ svg.addEventListener("pointerdown",e=>{
     }
     drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
   }
-  if(t.classList.contains("outport")){
+  if(mode==="rx"){                                      // colocar/mover el RX de la cámara inalámbrica más cercana
+    const p=toSvg(e), mx=p.x/S, my=p.y/S;
+    let ci=-1,bd=1e9;
+    cams.forEach((c,i)=>{ if(c.wireless){ const d=Math.hypot(mx-c.x,my-c.y); if(d<bd){bd=d;ci=i;} } });
+    if(ci>=0){ rx[ci]={x:mx,y:my}; redrawCables(); updateHUD(); return; }
+    drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
+  }
+  if(t.classList.contains("outport")){                  // nuevo cable (desde la cámara, o desde su RX si es inalámbrica)
     const ci=+t.dataset.cam;
     if(cables[ci]){cables[ci]=null;redrawCables();updateHUD();}
-    const p=cams[ci].port;
+    const p=cams[ci].wireless?rx[ci]:cams[ci].port;
     drag={kind:"new",ci,line:el("line",{x1:m(p.x),y1:m(p.y),x2:m(p.x),y2:m(p.y),stroke:css(LEVEL.cableTypes[curType].color),"stroke-width":3,"stroke-dasharray":"6 5",opacity:.8},gTemp)};
   }else if(t.classList.contains("wp")){
     drag={kind:"wp",ci:+t.dataset.cam,wp:+t.dataset.wp,moved:false,sx:e.clientX,sy:e.clientY};
@@ -616,6 +670,7 @@ function totals(){
   camConv.forEach(k=>{if(k){convs++;cost+=LEVEL.converters[k].eur;}});
   inConv.forEach(k=>{if(k){convs++;cost+=LEVEL.converters[k].eur;}});
   cost+=ramps.length*LEVEL.rampEur;
+  cams.forEach((c,ci)=>{ if(c.wireless && rx[ci]) cost+=c.txEur; });   // par TX+RX de cada inalámbrica colocada
   return {conn,total,convs,cost,allOk,within:cost<=LEVEL.budget,ramps:ramps.length};
 }
 function updateHUD(){
@@ -628,8 +683,13 @@ function updateHUD(){
 }
 function validate(){
   const problemas=[];
-  cables.forEach((c,ci)=>{
-    const name=cams[ci].id;
+  cams.forEach((cam,ci)=>{
+    const name=cam.id, c=cables[ci];
+    if(cam.wireless){                                   // cámara inalámbrica: RX colocado y en alcance
+      if(!rx[ci]){ problemas.push(`${name}: sin receptor (RX) colocado.`); return; }
+      const dRF=dist(cam,rx[ci]);
+      if(dRF>cam.range) problemas.push(`${name}: el receptor está a ${dRF.toFixed(0)} m, fuera del alcance RF (${cam.range} m).`);
+    }
     if(!c){ problemas.push(`${name}: sin conectar a la mesa.`); return; }
     const ct=LEVEL.cableTypes[c.type], len=pathLen(ci);
     if(crossHard(ci)) problemas.push(`${name}: el cable cruza las butacas, el foso u otro obstáculo.`);
@@ -687,21 +747,32 @@ function buildInv(){
     convBox.appendChild(b);
   });
   const elemBox=document.getElementById("elems"); elemBox.innerHTML="";
-  const rb=document.createElement("button");
-  rb.className="invbtn"; rb.dataset.kind="ramp"; rb.dataset.key="ramp";
-  rb.innerHTML=`<span><span class="nm">Pasacables</span><span class="meta">${LEVEL.rampEur} € · toca un pasillo (lo comparten varias cámaras)</span></span><span class="dot" style="background:var(--amber)"></span>`;
-  rb.addEventListener("click",()=>{mode="ramp";refreshInv();});
-  elemBox.appendChild(rb);
+  const hasRamp=(LEVEL.zones||[]).some(z=>zoneBlock(z)==="ramp");
+  const hasWireless=cams.some(c=>c.wireless);
+  if(hasRamp){
+    const rb=document.createElement("button");
+    rb.className="invbtn"; rb.dataset.kind="ramp"; rb.dataset.key="ramp";
+    rb.innerHTML=`<span><span class="nm">Pasacables</span><span class="meta">${LEVEL.rampEur} € · toca un pasillo (lo comparten varias cámaras)</span></span><span class="dot" style="background:var(--amber)"></span>`;
+    rb.addEventListener("click",()=>{mode="ramp";refreshInv();});
+    elemBox.appendChild(rb);
+  }
+  if(hasWireless){
+    const wb=document.createElement("button");
+    wb.className="invbtn"; wb.dataset.kind="rx"; wb.dataset.key="rx";
+    wb.innerHTML=`<span><span class="nm">Receptor (RX)</span><span class="meta">toca cerca de la cámara inalámbrica (dentro del alcance RF)</span></span><span class="dot" style="background:var(--amber)"></span>`;
+    wb.addEventListener("click",()=>{mode="rx";refreshInv();});
+    elemBox.appendChild(wb);
+  }
   // ocultar secciones que este nivel no usa
   document.getElementById("convBlock").style.display = Object.keys(LEVEL.converters).length ? "" : "none";
-  document.getElementById("elemBlock").style.display = (LEVEL.zones||[]).some(z=>zoneBlock(z)==="ramp") ? "" : "none";
+  document.getElementById("elemBlock").style.display = (hasRamp||hasWireless) ? "" : "none";
   refreshInv();
 }
 function refreshInv(){
   document.querySelectorAll(".invbtn").forEach(b=>{
     const kind=b.dataset.kind, key=b.dataset.key;
-    const on=(kind==="cable"&&mode==="cable"&&key===curType)||(kind==="conv"&&mode==="conv"&&key===curConv)||(kind==="ramp"&&mode==="ramp");
-    const c=kind==="cable"?css(LEVEL.cableTypes[key].color):(kind==="ramp"?css("--amber"):css("--txt"));
+    const on=(kind==="cable"&&mode==="cable"&&key===curType)||(kind==="conv"&&mode==="conv"&&key===curConv)||(kind==="ramp"&&mode==="ramp")||(kind==="rx"&&mode==="rx");
+    const c=kind==="cable"?css(LEVEL.cableTypes[key].color):((kind==="ramp"||kind==="rx")?css("--amber"):css("--txt"));
     b.classList.toggle("on",on);
     b.style.color=on?c:""; b.style.borderColor=on?c:"";
   });
@@ -734,7 +805,7 @@ function cargarNivel(vid,idx){
   cables=new Array(cams.length).fill(null);
   camConv=new Array(cams.length).fill(null);
   inConv=new Array(inputs.length).fill(null);
-  ramps=[]; curType=Object.keys(LEVEL.cableTypes)[0]; curConv=null; mode="cable"; locked=false;
+  ramps=[]; rx={}; curType=Object.keys(LEVEL.cableTypes)[0]; curConv=null; mode="cable"; locked=false;
   zoom.k=1; zoom.tx=0; zoom.ty=0; applyZoom();
   document.getElementById("nivel").textContent=LEVEL.nombre;
   document.getElementById("encargo").textContent=LEVEL.encargo;
@@ -747,7 +818,7 @@ function reset(){
   cables=new Array(cams.length).fill(null);
   camConv=new Array(cams.length).fill(null);
   inConv=new Array(inputs.length).fill(null);
-  ramps.length=0; locked=false;
+  ramps.length=0; rx={}; locked=false;
   document.getElementById("win").classList.remove("show");
   redrawCables(); updateHUD();
 }
