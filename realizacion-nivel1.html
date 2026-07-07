@@ -119,7 +119,7 @@
 
     <div class="block">
       <h2>Cómo se juega</h2>
-      <p class="hint">Elige el <b style="color:var(--txt)">tipo de cable</b> y arrastra desde el <b style="color:var(--txt)">objetivo</b> de la cámara a una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo (suma metros); rodea las butacas y cruza los <b style="color:var(--txt)">pasillos</b> con un pasacables (uno vale para varias). Si el nivel trae conversores, colócalos tocando cámara o entrada — ojo al sentido. El juego <b style="color:var(--txt)">no te avisa</b> si algo no encaja: pulsa <b style="color:var(--txt)">Ya lo tengo</b> para validar. Pellizca para acercar.</p>
+      <p class="hint">Elige el <b style="color:var(--txt)">tipo de cable</b> y arrastra desde el <b style="color:var(--txt)">objetivo</b> de la cámara a una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo (suma metros); rodea las butacas (los pasillos se cruzan libres). Si el nivel trae conversores, colócalos tocando cámara o entrada — ojo al sentido. El juego <b style="color:var(--txt)">no te avisa</b> si algo no encaja: pulsa <b style="color:var(--txt)">Ya lo tengo</b> para validar. Pellizca para acercar.</p>
     </div>
 
     <button id="validate">Ya lo tengo · Validar</button>
@@ -155,7 +155,7 @@
    ============================================================ */
 const TEATRO_N1 = {
   nombre:  "Teatro · Nivel 1",
-  encargo: "Lleva las 3 cámaras del escenario a la cabina (a la derecha). Rodea las butacas por los laterales; para cruzar el pasillo central usa un pasacables (uno vale para varias cámaras). SDI hasta 100 m; si no, fibra.",
+  encargo: "Lleva las 3 cámaras del escenario a la cabina (a la derecha). Rodea las butacas por los laterales y el pasillo central. SDI hasta 100 m; para tiradas largas, fibra.",
   planoM:  { w:110, h:66 },
   escalaPxM: 10.5,
   mesa: { x:98, y:33, inputs:3, inFmt:"sdi", faces:"left" },   // cabina a la derecha, entradas mirando a la sala
@@ -169,7 +169,7 @@ const TEATRO_N1 = {
     { shape:"rect", kind:"stage",   x:10, y:33, w:12, h:54, label:"ESCENARIO" },
     { shape:"rect", kind:"pit",     x:20, y:33, w:6,  h:50, label:"FOSO" },
     { shape:"rect", kind:"seating", x:56, y:21, w:56, h:14, label:"BUTACAS" },
-    { shape:"rect", kind:"aisle",   x:56, y:33, w:56, h:10, label:"PASILLO CENTRAL" },
+    { shape:"rect", kind:"walk",    x:56, y:33, w:56, h:10, label:"PASILLO CENTRAL" },
     { shape:"rect", kind:"seating", x:56, y:45, w:56, h:14, label:"BUTACAS" },
   ],
   rampEur: 120, rampW: 6,
@@ -226,8 +226,8 @@ function segRect(a,b,o){
   return ss(a,b,c[0],c[1])||ss(a,b,c[1],c[2])||ss(a,b,c[2],c[3])||ss(a,b,c[3],c[0]);
 }
 function zoneBlock(z){                             // cómo se comporta cada zona ante el cable
-  if(z.kind==="aisle") return "ramp";              // cruzable con pasacables
-  if(z.kind==="stage") return "none";              // decorativa, no bloquea
+  if(z.kind==="aisle") return "ramp";              // cruzable con pasacables (de momento sin usar)
+  if(z.kind==="stage"||z.kind==="walk") return "none";  // decorativa / pasillo libre, no bloquea
   return "hard";                                   // pit, seating, wall, column…
 }
 
@@ -264,7 +264,7 @@ function drawStatic(){
     }
     let fill="rgba(92,107,103,.12)", stroke=css("--dim"), dash=null, lbl=css("--dim");
     if(z.kind==="stage"){ fill="none"; stroke=css("--cyan"); lbl=css("--cyan"); }
-    else if(zoneBlock(z)==="ramp"){ fill="none"; stroke=css("--line"); dash="4 6"; lbl=css("--dim"); }  // pasillo neutro
+    else if(z.kind==="aisle"||z.kind==="walk"){ fill="none"; stroke=css("--line"); dash="4 6"; lbl=css("--dim"); }  // pasillo neutro
     const a={x:m(z.x-z.w/2),y:m(z.y-z.h/2),width:m(z.w),height:m(z.h),rx:3,fill:fill,stroke:stroke,"stroke-width":1.4};
     if(dash)a["stroke-dasharray"]=dash;
     el("rect",a,gStatic);
