@@ -182,8 +182,75 @@ const TEATRO_N1 = {
   budget: 2800,
 };
 
+// zonas compartidas por N2 y N3 (teatro más grande, con columnas)
+const TEATRO_ZONAS_2 = [
+  { shape:"rect",   kind:"stage",   x:10, y:37, w:12, h:58, label:"ESCENARIO" },
+  { shape:"rect",   kind:"pit",     x:20, y:37, w:6,  h:54, label:"FOSO" },
+  { shape:"rect",   kind:"seating", x:60, y:24, w:64, h:16, label:"BUTACAS" },
+  { shape:"rect",   kind:"walk",    x:60, y:37, w:64, h:10, label:"PASILLO CENTRAL" },
+  { shape:"rect",   kind:"seating", x:60, y:50, w:64, h:16, label:"BUTACAS" },
+  { shape:"circle", kind:"column",  x:50, y:11, r:3 },
+  { shape:"circle", kind:"column",  x:74, y:63, r:3 },
+];
+const TEATRO_CABLES = {
+  sdi:   { nombre:"HD-SDI", signal:"sdi", limite:100, eurM:3,  conv:0, color:"--cyan"  },
+  fibra: { nombre:"Fibra",  signal:"sdi", limite:500, eurM:10, conv:2, color:"--fiber" },
+};
+
+const TEATRO_N2 = {
+  nombre:  "Teatro · Nivel 2",
+  encargo: "Ahora 4 cámaras y columnas en la sala. Rodea butacas y columnas y llega a la cabina con un presupuesto más justo. Usa fibra solo si una tirada se pasa de 100 m.",
+  planoM:  { w:118, h:72 },
+  escalaPxM: 9.5,
+  mesa: { x:104, y:37, inputs:4, inFmt:"sdi", faces:"left" },
+  cams: [
+    { id:"CAM 1", x:25, y:12, out:"sdi" },
+    { id:"CAM 2", x:25, y:26, out:"sdi" },
+    { id:"CAM 3", x:25, y:48, out:"sdi" },
+    { id:"CAM 4", x:25, y:62, out:"sdi" },
+  ],
+  zones: TEATRO_ZONAS_2,
+  rampEur: 120, rampW: 6,
+  cableTypes: TEATRO_CABLES,
+  converters: {},
+  convEur: 250,
+  budget: 2400,
+};
+
+const TEATRO_N3 = {
+  nombre:  "Teatro · Nivel 3",
+  encargo: "Producción mixta: cámaras con salidas distintas (SDI, HDMI de una mirrorless, IP de una PTZ). La mesa solo acepta SDI: coloca los conversores en el sentido correcto. Y cuadra el presupuesto.",
+  planoM:  { w:118, h:72 },
+  escalaPxM: 9.5,
+  mesa: { x:104, y:37, inputs:4, inFmt:"sdi", faces:"left" },
+  cams: [
+    { id:"CAM 1", x:25, y:12, out:"sdi"  },
+    { id:"CAM 2", x:25, y:26, out:"hdmi" },
+    { id:"CAM 3", x:25, y:48, out:"ip"   },
+    { id:"CAM 4", x:25, y:62, out:"sdi"  },
+  ],
+  zones: TEATRO_ZONAS_2,
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    sdi:   { nombre:"HD-SDI",   signal:"sdi",  limite:100, eurM:3,   conv:0, color:"--cyan"  },
+    fibra: { nombre:"Fibra",    signal:"sdi",  limite:500, eurM:10,  conv:2, color:"--fiber" },
+    hdmi:  { nombre:"HDMI",     signal:"hdmi", limite:15,  eurM:1.5, conv:0, color:"--amber" },
+    eth:   { nombre:"Ethernet", signal:"ip",   limite:100, eurM:2,   conv:0, color:"--eth"   },
+  },
+  converters: {
+    hdmi_sdi: { nombre:"HDMI→SDI", tag:"H→S", from:"hdmi", to:"sdi",  eur:180 },
+    sdi_hdmi: { nombre:"SDI→HDMI", tag:"S→H", from:"sdi",  to:"hdmi", eur:150 },
+    ip_sdi:   { nombre:"IP→SDI",   tag:"I→S", from:"ip",   to:"sdi",  eur:300 },
+    sdi_ip:   { nombre:"SDI→IP",   tag:"S→I", from:"sdi",  to:"ip",   eur:300 },
+    hdmi_ip:  { nombre:"HDMI→IP",  tag:"H→I", from:"hdmi", to:"ip",   eur:350 },
+    ip_hdmi:  { nombre:"IP→HDMI",  tag:"I→H", from:"ip",   to:"hdmi", eur:300 },
+  },
+  convEur: 250,
+  budget: 3400,
+};
+
 const GAME = {
-  teatro:    { nombre:"Teatro",     sub:"Escenario a la izquierda, foso, butacas que rodear y pasillos con pasacables. Cabina al fondo.", niveles:[ TEATRO_N1 ] },
+  teatro:    { nombre:"Teatro",     sub:"Escenario a la izquierda, foso, butacas que rodear. Cabina al fondo. Sube: columnas, más cámaras y formatos mixtos.", niveles:[ TEATRO_N1, TEATRO_N2, TEATRO_N3 ] },
   concierto: { nombre:"Concierto",  sub:"Grandes distancias (fibra), público de pie enorme, torre FOH. Escenario a la izquierda.", niveles:[], soon:true },
   setTV:     { nombre:"Set de TV",  sub:"Formatos mixtos y conversores, control en sala aparte. Mesa arriba, cámaras abajo.", niveles:[], soon:true },
 };
