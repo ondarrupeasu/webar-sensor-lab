@@ -158,19 +158,20 @@ const TEATRO_N1 = {
   encargo: "Lleva las 3 cámaras del escenario a la cabina (a la derecha). Rodea las butacas por los laterales y el pasillo central. SDI hasta 100 m; para tiradas largas, fibra.",
   planoM:  { w:110, h:66 },
   escalaPxM: 10.5,
-  mesa: { x:98, y:33, inputs:3, inFmt:"sdi", faces:"left" },   // cabina a la derecha, entradas mirando a la sala
+  mesa: { x:95, y:33, inputs:3, inFmt:"sdi", faces:"left" },   // cabina compacta a la derecha, entradas mirando a la sala
   cams: [
     { id:"CAM 1", x:25, y:12, out:"sdi" },
     { id:"CAM 2", x:25, y:54, out:"sdi" },
     { id:"CAM 3", x:25, y:42, out:"sdi" },
   ],
-  // zonas (kind: stage=decor, pit/seating=bloqueo, aisle=pasillo cruzable con pasacables)
+  // zonas (kind: stage=decor, pit/seating=bloqueo, walk=paso libre)
   zones: [
     { shape:"rect", kind:"stage",   x:10, y:33, w:12, h:54, label:"ESCENARIO" },
     { shape:"rect", kind:"pit",     x:20, y:33, w:6,  h:50, label:"FOSO" },
-    { shape:"rect", kind:"seating", x:56, y:21, w:56, h:14, label:"BUTACAS" },
-    { shape:"rect", kind:"walk",    x:56, y:33, w:56, h:10, label:"PASILLO CENTRAL" },
-    { shape:"rect", kind:"seating", x:56, y:45, w:56, h:14, label:"BUTACAS" },
+    { shape:"rect", kind:"seating", x:52, y:21, w:48, h:14, label:"BUTACAS" },
+    { shape:"rect", kind:"walk",    x:52, y:33, w:48, h:10, label:"PASILLO CENTRAL" },
+    { shape:"rect", kind:"seating", x:52, y:45, w:48, h:14, label:"BUTACAS" },
+    { shape:"rect", kind:"walk",    x:82, y:33, w:10, h:54, label:"PASILLO" },
   ],
   rampEur: 120, rampW: 6,
   cableTypes: {
@@ -186,11 +187,12 @@ const TEATRO_N1 = {
 const TEATRO_ZONAS_2 = [
   { shape:"rect",   kind:"stage",   x:10, y:37, w:12, h:58, label:"ESCENARIO" },
   { shape:"rect",   kind:"pit",     x:20, y:37, w:6,  h:54, label:"FOSO" },
-  { shape:"rect",   kind:"seating", x:60, y:24, w:64, h:16, label:"BUTACAS" },
-  { shape:"rect",   kind:"walk",    x:60, y:37, w:64, h:10, label:"PASILLO CENTRAL" },
-  { shape:"rect",   kind:"seating", x:60, y:50, w:64, h:16, label:"BUTACAS" },
+  { shape:"rect",   kind:"seating", x:54, y:24, w:52, h:16, label:"BUTACAS" },
+  { shape:"rect",   kind:"walk",    x:54, y:37, w:52, h:10, label:"PASILLO CENTRAL" },
+  { shape:"rect",   kind:"seating", x:54, y:50, w:52, h:16, label:"BUTACAS" },
+  { shape:"rect",   kind:"walk",    x:88, y:37, w:10, h:58, label:"PASILLO" },
   { shape:"circle", kind:"column",  x:50, y:11, r:3 },
-  { shape:"circle", kind:"column",  x:74, y:63, r:3 },
+  { shape:"circle", kind:"column",  x:72, y:63, r:3 },
 ];
 const TEATRO_CABLES = {
   sdi:   { nombre:"HD-SDI", signal:"sdi", limite:100, eurM:3,  conv:0, color:"--cyan"  },
@@ -202,7 +204,7 @@ const TEATRO_N2 = {
   encargo: "Ahora 4 cámaras y columnas en la sala. Rodea butacas y columnas y llega a la cabina con un presupuesto más justo. Usa fibra solo si una tirada se pasa de 100 m.",
   planoM:  { w:118, h:72 },
   escalaPxM: 9.5,
-  mesa: { x:104, y:37, inputs:4, inFmt:"sdi", faces:"left" },
+  mesa: { x:100, y:37, inputs:4, inFmt:"sdi", faces:"left" },
   cams: [
     { id:"CAM 1", x:25, y:12, out:"sdi" },
     { id:"CAM 2", x:25, y:26, out:"sdi" },
@@ -222,7 +224,7 @@ const TEATRO_N3 = {
   encargo: "Producción mixta: cámaras con salidas distintas (SDI, HDMI de una mirrorless, IP de una PTZ). La mesa solo acepta SDI: coloca los conversores en el sentido correcto. Y cuadra el presupuesto.",
   planoM:  { w:118, h:72 },
   escalaPxM: 9.5,
-  mesa: { x:104, y:37, inputs:4, inFmt:"sdi", faces:"left" },
+  mesa: { x:100, y:37, inputs:4, inFmt:"sdi", faces:"left" },
   cams: [
     { id:"CAM 1", x:25, y:12, out:"sdi"  },
     { id:"CAM 2", x:25, y:26, out:"hdmi" },
@@ -351,7 +353,7 @@ function drawStatic(){
 
   // mesa / cabina (faces "top"=entradas arriba; "left"=entradas a la izquierda, mirando a la sala)
   const faces=LEVEL.mesa.faces||"top", nin=LEVEL.mesa.inputs;
-  const mw = faces==="left"?20:26, mh = faces==="left"?(nin*7+8):10;
+  const mw = faces==="left"?14:26, mh = faces==="left"?(nin*6+6):10;
   el("rect",{x:m(LEVEL.mesa.x-mw/2),y:m(LEVEL.mesa.y-mh/2),width:m(mw),height:m(mh),fill:css("--panel"),stroke:css("--line"),"stroke-width":1.5,rx:3},gStatic);
   const ml=el("text",{x:m(LEVEL.mesa.x+(faces==="left"?2:0)),y:m(LEVEL.mesa.y)+3,fill:css("--dim"),"font-size":8,"letter-spacing":"1","text-anchor":"middle"},gStatic);
   ml.textContent="CABINA";
@@ -696,7 +698,7 @@ function cargarNivel(vid,idx){
   svg.setAttribute("viewBox",`0 0 ${VBW} ${VBH}`);
   inputs=[]; { const n=LEVEL.mesa.inputs, faces=LEVEL.mesa.faces||"top";
     for(let i=0;i<n;i++) inputs.push(faces==="left"
-      ? {x:LEVEL.mesa.x-11, y:LEVEL.mesa.y+(i-(n-1)/2)*7}
+      ? {x:LEVEL.mesa.x-8, y:LEVEL.mesa.y+(i-(n-1)/2)*6}
       : {x:LEVEL.mesa.x+(i-(n-1)/2)*6, y:LEVEL.mesa.y-4}); }
   cams=LEVEL.cams.map(c=>({...c, port:{x:c.x+3, y:c.y}}));   // salida por detrás de la cámara
   cables=new Array(cams.length).fill(null);
