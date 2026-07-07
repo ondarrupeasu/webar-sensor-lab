@@ -98,7 +98,7 @@
 
     <div class="block">
       <h2>Cómo se juega</h2>
-      <p class="hint"><b style="color:var(--txt)">Elige el tipo de cable</b> arriba y arrastra desde el <b style="color:var(--txt)">objetivo</b> de la cámara a una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo (suma metros); no puede cruzar columnas ni público. Toca un quiebre para quitarlo. Cada cámara tiene su <b style="color:var(--txt)">salida</b> (SDI/HDMI/IP) y la mesa solo acepta SDI: elige un <b style="color:var(--txt)">conversor</b> y toca una cámara o una entrada para colocarlo. La fibra llega lejos; el HDMI es corto; el IP va por Ethernet. El cable <b style="color:var(--txt)">no te avisa</b> si algo no encaja: debes saberlo. No te pases del <b style="color:var(--txt)">presupuesto</b>. Cuando lo tengas todo, pulsa <b style="color:var(--txt)">Ya lo tengo</b> para validar. Pellizca para acercar.</p>
+      <p class="hint"><b style="color:var(--txt)">Elige el tipo de cable</b> arriba y arrastra desde el <b style="color:var(--txt)">objetivo</b> de la cámara a una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo (suma metros); no puede cruzar columnas ni público. Toca un quiebre para quitarlo. Cada cámara tiene su <b style="color:var(--txt)">salida</b> (SDI/HDMI/IP) y la mesa solo acepta SDI: elige un <b style="color:var(--txt)">conversor</b> y toca una cámara o una entrada para colocarlo. La fibra llega lejos; el HDMI es corto; el IP va por Ethernet. Hay conversores de sobra: fíjate en el <b style="color:var(--txt)">sentido</b> (HDMI→SDI no es lo mismo que SDI→HDMI). El juego <b style="color:var(--txt)">no te avisa</b> si algo no encaja: debes saberlo. No te pases del <b style="color:var(--txt)">presupuesto</b>. Cuando lo tengas todo, pulsa <b style="color:var(--txt)">Ya lo tengo</b> para validar. Pellizca para acercar.</p>
     </div>
 
     <button id="validate">Ya lo tengo · Validar</button>
@@ -150,10 +150,14 @@ const LEVEL = {
     hdmi:  { nombre:"HDMI",     signal:"hdmi", limite:15,  eurM:1.5, conv:0, color:"--amber" },
     eth:   { nombre:"Ethernet", signal:"ip",   limite:100, eurM:2,   conv:0, color:"--eth"   },
   },
-  // conversores que colocas en un puerto (from→to). En cámara: from=salida. En entrada: to=SDI.
+  // conversores (from→to). Están TODOS los sentidos: elegir el correcto es parte del reto.
   converters: {
-    hdmi_sdi: { nombre:"HDMI→SDI", tag:"H→S", from:"hdmi", to:"sdi", eur:180 },
-    ip_sdi:   { nombre:"IP→SDI",   tag:"I→S", from:"ip",   to:"sdi", eur:300 },
+    hdmi_sdi: { nombre:"HDMI→SDI", tag:"H→S", from:"hdmi", to:"sdi",  eur:180 },
+    sdi_hdmi: { nombre:"SDI→HDMI", tag:"S→H", from:"sdi",  to:"hdmi", eur:150 },
+    ip_sdi:   { nombre:"IP→SDI",   tag:"I→S", from:"ip",   to:"sdi",  eur:300 },
+    sdi_ip:   { nombre:"SDI→IP",   tag:"S→I", from:"sdi",  to:"ip",   eur:300 },
+    hdmi_ip:  { nombre:"HDMI→IP",  tag:"H→I", from:"hdmi", to:"ip",   eur:350 },
+    ip_hdmi:  { nombre:"IP→HDMI",  tag:"I→H", from:"ip",   to:"hdmi", eur:300 },
   },
   convEur: 250,      // € por conversor implícito de la fibra (usa 2 por tirada)
   budget:  3000,     // tope de presupuesto (€)
@@ -215,8 +219,16 @@ let locked=false;                                 // true tras validar: bloquea 
 let curConv=null, mode="cable";                   // conversor seleccionado / modo del inventario ("cable"|"conv")
 let camConv=new Array(LEVEL.cams.length).fill(null);   // conversor en la salida de cada cámara
 let inConv=new Array(LEVEL.mesa.inputs).fill(null);    // conversor en cada entrada de la mesa
-const effOut=ci=>camConv[ci]?LEVEL.converters[camConv[ci]].to:cams[ci].out;   // formato efectivo de salida
-const effIn=j=>inConv[j]?LEVEL.converters[inConv[j]].from:LEVEL.mesa.inFmt;    // formato que acepta la entrada
+function effOut(ci){                               // formato efectivo de salida de la cámara
+  const k=camConv[ci]; if(!k) return cams[ci].out;
+  const cv=LEVEL.converters[k];
+  return cv.from===cams[ci].out ? cv.to : null;   // conversor en sentido equivocado → sin señal válida
+}
+function effIn(j){                                 // formato que acepta la entrada de la mesa
+  const k=inConv[j]; if(!k) return LEVEL.mesa.inFmt;
+  const cv=LEVEL.converters[k];
+  return cv.to===LEVEL.mesa.inFmt ? cv.from : null; // conversor mal orientado hacia la mesa → inválido
+}
 
 /* ============================================================
    DIBUJO ESTÁTICO (rejilla, escenario, mesa, cámaras)
@@ -333,14 +345,15 @@ function redrawCables(){
     const t=el("text",{x:m(cx),y:m(cy)+3,fill:col,"font-size":14,"font-weight":"bold","text-anchor":"middle"},gCables);
     t.textContent=len.toFixed(0)+" m";
   });
-  // insignias de conversores colocados en puertos
-  const badge=(pos,tag)=>{
-    el("rect",{x:m(pos.x)+7,y:m(pos.y)-22,width:34,height:16,rx:3,fill:css("--panel"),stroke:css("--txt"),"stroke-width":1},gCables);
-    const t=el("text",{x:m(pos.x)+24,y:m(pos.y)-10,fill:css("--txt"),"font-size":10,"font-weight":"bold","text-anchor":"middle"},gCables);
+  // insignias de conversores colocados en puertos (rojas si están mal orientadas y ya se validó)
+  const badge=(pos,tag,bad)=>{
+    const c=(locked&&bad)?css("--red"):css("--txt");
+    el("rect",{x:m(pos.x)+7,y:m(pos.y)-22,width:34,height:16,rx:3,fill:css("--panel"),stroke:c,"stroke-width":1},gCables);
+    const t=el("text",{x:m(pos.x)+24,y:m(pos.y)-10,fill:c,"font-size":10,"font-weight":"bold","text-anchor":"middle"},gCables);
     t.textContent=tag;
   };
-  camConv.forEach((k,ci)=>{ if(k) badge(cams[ci].port, LEVEL.converters[k].tag); });
-  inConv.forEach((k,j)=>{ if(k) badge(inputs[j], LEVEL.converters[k].tag); });
+  camConv.forEach((k,ci)=>{ if(k){const cv=LEVEL.converters[k]; badge(cams[ci].port, cv.tag, cv.from!==cams[ci].out);} });
+  inConv.forEach((k,j)=>{ if(k){const cv=LEVEL.converters[k]; badge(inputs[j], cv.tag, cv.to!==LEVEL.mesa.inFmt);} });
 }
 
 /* ============================================================
@@ -385,7 +398,7 @@ function updatePinch(){
 }
 
 svg.addEventListener("pointerdown",e=>{
-  svg.setPointerCapture(e.pointerId);
+  try{svg.setPointerCapture(e.pointerId);}catch(_){}   // en algún caso límite puede lanzar; no abortar el gesto
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===2){ startPinch(); return; }        // segundo dedo → pellizco
   if(pointers.size>2) return;
@@ -394,16 +407,15 @@ svg.addEventListener("pointerdown",e=>{
     return;
   }
   const t=e.target;
-  if(mode==="conv" && curConv){                         // modo conversor: tocar cámara o entrada
-    const cv=LEVEL.converters[curConv];
-    if(t.classList.contains("outport")){
+  if(mode==="conv" && curConv){                         // modo conversor: colocar en cualquier puerto
+    if(t.classList.contains("outport")){                // (aunque esté en sentido equivocado: se avisa al validar)
       const ci=+t.dataset.cam;
-      if(cv.from===cams[ci].out) camConv[ci]=(camConv[ci]===curConv?null:curConv);
+      camConv[ci]=(camConv[ci]===curConv?null:curConv);
       redrawCables(); updateHUD(); return;
     }
     if(t.classList.contains("inport")){
       const j=+t.dataset.in;
-      if(cv.to===LEVEL.mesa.inFmt) inConv[j]=(inConv[j]===curConv?null:curConv);
+      inConv[j]=(inConv[j]===curConv?null:curConv);
       redrawCables(); updateHUD(); return;
     }
     drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
@@ -509,8 +521,19 @@ function validate(){                                  // "Ya lo tengo": evalúa,
     const ct=LEVEL.cableTypes[c.type], len=pathLen(ci);
     if(cableCross(ci)) problemas.push(`${name}: el cable cruza un obstáculo (columna o público).`);
     if(len>ct.limite)  problemas.push(`${name}: ${len.toFixed(0)} m con ${ct.nombre} supera su límite de ${ct.limite} m.`);
-    if(ct.signal!==effIn(c.input)) problemas.push(`${name}: el cable ${ct.nombre} no encaja en la entrada de la mesa (acepta ${effIn(c.input).toUpperCase()}).`);
-    else if(ct.signal!==effOut(ci)) problemas.push(`${name}: la cámara saca ${effOut(ci).toUpperCase()} y el cable es ${ct.signal.toUpperCase()}: falta un conversor.`);
+    // conversores en sentido equivocado (el error típico: SDI→HDMI en vez de HDMI→SDI)
+    const cvc=camConv[ci]&&LEVEL.converters[camConv[ci]];
+    if(cvc && cvc.from!==cams[ci].out)
+      problemas.push(`${name}: el conversor ${cvc.nombre} espera ${cvc.from.toUpperCase()}, pero la cámara saca ${cams[ci].out.toUpperCase()} — sentido equivocado.`);
+    const cvi=inConv[c.input]&&LEVEL.converters[inConv[c.input]];
+    if(cvi && cvi.to!==LEVEL.mesa.inFmt)
+      problemas.push(`${name}: el conversor ${cvi.nombre} de la entrada saca ${cvi.to.toUpperCase()}, pero la mesa necesita ${LEVEL.mesa.inFmt.toUpperCase()} — sentido equivocado.`);
+    // encaje de formato del cable (solo si los conversores están bien orientados)
+    const eo=effOut(ci), ei=effIn(c.input);
+    if(eo && ei){
+      if(ct.signal!==eo)      problemas.push(`${name}: la cámara entrega ${eo.toUpperCase()} y el cable es ${ct.signal.toUpperCase()}: no encajan.`);
+      else if(ct.signal!==ei) problemas.push(`${name}: el cable ${ct.nombre} (${ct.signal.toUpperCase()}) no entra en la mesa, que espera ${ei.toUpperCase()}.`);
+    }
   });
   const t=totals();
   if(t.cost>LEVEL.budget) problemas.push(`Presupuesto: ${t.cost.toFixed(0)} € superan el tope de ${LEVEL.budget} €.`);
