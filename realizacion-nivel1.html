@@ -14,20 +14,21 @@
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--mono);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   #app{display:flex;height:100%;gap:1px;background:var(--line)}
+  button{font-family:var(--mono);cursor:pointer}
 
   /* ---- panel lateral ---- */
   #side{width:290px;min-width:290px;background:var(--panel);padding:22px 20px;display:flex;flex-direction:column;gap:20px;overflow-y:auto}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
   .eyebrow{font-size:10px;letter-spacing:.28em;color:var(--amber)}
   h1{font-size:16px;font-weight:400;letter-spacing:.02em;line-height:1.3;margin-top:6px}
+  #tomenu{background:transparent;border:1px solid var(--line);color:var(--dim);width:36px;height:32px;font-size:15px;border-radius:5px;flex:0 0 auto}
+  #tomenu:active{background:var(--line);color:var(--txt)}
   .encargo{font-size:12px;line-height:1.6;color:var(--dim);border-left:2px solid var(--cyan);padding-left:12px}
   .block{border-top:1px solid var(--line);padding-top:16px}
   .block h2{font-size:10px;letter-spacing:.18em;color:var(--dim);margin-bottom:12px;text-transform:uppercase}
   .stat{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:9px}
   .stat .lbl{color:var(--dim);letter-spacing:.06em}
   .stat .val{color:var(--txt);font-variant-numeric:tabular-nums;font-size:14px}
-  .stat .val.warn{color:var(--amber)} .stat .val.bad{color:var(--red)} .stat .val.ok{color:var(--cyan)}
-  .legend{font-size:10.5px;line-height:1.9;color:var(--dim)}
-  .legend .chip{display:inline-block;width:22px;height:3px;vertical-align:middle;margin-right:8px;border-radius:2px}
   .hint{font-size:11px;line-height:1.6;color:var(--dim)}
   .inv{display:flex;flex-direction:column;gap:8px}
   .invbtn{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;background:transparent;border:1px solid var(--line);color:var(--dim);padding:10px 12px;font-family:var(--mono);text-align:left;transition:.15s}
@@ -35,36 +36,47 @@
   .invbtn .nm{font-size:12.5px;letter-spacing:.04em;display:block}
   .invbtn .meta{font-size:9.5px;letter-spacing:.03em;opacity:.8;display:block;margin-top:3px}
   .invbtn .dot{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
-  button{font-family:var(--mono);cursor:pointer}
   #validate{margin-top:auto;background:var(--cyan);color:var(--bg);border:0;padding:13px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:bold;transition:.18s}
   #validate:active{opacity:.85}
   #reset{margin-top:8px;background:transparent;color:var(--dim);border:1px solid var(--line);padding:11px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:.18s}
   #reset:active{background:var(--line);color:var(--txt)}
-  #win .res{text-align:left;font-size:12px;line-height:1.7;color:var(--dim);max-width:400px;margin-bottom:24px}
-  #win .res .bad{color:var(--red);margin-bottom:4px}
-  #win .res .good{color:var(--cyan)}
-  #win .btns{display:flex;gap:12px}
-  #win .ghost{color:var(--dim);border-color:var(--line)}
 
   /* ---- plano ---- */
   #stage{flex:1;background:var(--bg);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
   #plano{width:100%;height:100%;touch-action:none}
   text{font-family:var(--mono);pointer-events:none}
 
-  /* ---- banner de victoria ---- */
+  /* ---- resultado ---- */
   #win{position:absolute;inset:0;z-index:10;background:rgba(10,14,13,.82);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
   #win.show{display:flex}
   #win .k{font-size:11px;letter-spacing:.3em;color:var(--cyan);margin-bottom:16px}
   #win h3{font-size:24px;font-weight:400;margin-bottom:10px}
-  #win p{font-size:13px;color:var(--dim);line-height:1.7;max-width:360px;margin-bottom:26px}
-  #win b{color:var(--txt)}
-  #win button{background:transparent;color:var(--cyan);border:1.5px solid var(--cyan);padding:13px 34px;font-size:12px;letter-spacing:.16em;text-transform:uppercase}
+  #win .res{text-align:left;font-size:12px;line-height:1.7;color:var(--dim);max-width:400px;margin-bottom:24px}
+  #win .res .bad{color:var(--red);margin-bottom:4px}
+  #win .res .good{color:var(--cyan)}
+  #win .btns{display:flex;gap:12px}
+  #win button{background:transparent;color:var(--cyan);border:1.5px solid var(--cyan);padding:13px 30px;font-size:12px;letter-spacing:.16em;text-transform:uppercase}
   #win button:active{background:var(--cyan);color:var(--bg)}
+  #win .ghost{color:var(--dim);border-color:var(--line)}
+
+  /* ---- menú de eventos ---- */
+  #menu{position:fixed;inset:0;z-index:30;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:30px;overflow-y:auto}
+  #menu.show{display:flex}
+  .menu-title{font-size:22px;font-weight:400;margin:10px 0 4px;color:var(--txt)}
+  .menu-sub{font-size:12px;color:var(--dim);margin-bottom:28px;letter-spacing:.04em}
+  .venues{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;max-width:780px;width:100%}
+  .venue{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:18px;display:flex;flex-direction:column}
+  .venue h3{font-size:15px;font-weight:400;color:var(--cyan);margin-bottom:6px}
+  .venue .sub{font-size:11px;color:var(--dim);margin-bottom:12px;line-height:1.5;min-height:44px}
+  .venue.soon{opacity:.45}
+  .venue .lvl{text-align:left;background:transparent;border:1px solid var(--line);color:var(--txt);padding:9px 12px;font-size:12px;margin-top:8px;transition:.15s}
+  .venue .lvl:hover{border-color:var(--cyan);color:var(--cyan)}
+  .venue .soonlbl{font-size:10px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;margin-top:8px}
 
   @media(max-width:720px){
     #app{flex-direction:column}
-    #side{width:100%;min-width:0;flex-direction:row;flex-wrap:wrap;gap:14px 24px;padding:14px 16px;max-height:44%}
-    #reset{margin-top:0}
+    #side{width:100%;min-width:0;flex-direction:row;flex-wrap:wrap;gap:14px 24px;padding:14px 16px;max-height:46%}
+    #validate,#reset{margin-top:0}
   }
 </style>
 </head>
@@ -72,9 +84,12 @@
 <div id="app">
 
   <aside id="side">
-    <div>
-      <div class="eyebrow">CIFP TARTANGA · REALIZACIÓN</div>
-      <h1 id="nivel">Nivel 1</h1>
+    <div class="head">
+      <div>
+        <div class="eyebrow">CIFP TARTANGA · REALIZACIÓN</div>
+        <h1 id="nivel">—</h1>
+      </div>
+      <button id="tomenu" title="Elegir evento">≡</button>
     </div>
     <p class="encargo" id="encargo"></p>
 
@@ -83,12 +98,12 @@
       <div class="inv" id="inv"></div>
     </div>
 
-    <div class="block">
+    <div class="block" id="convBlock">
       <h2>Conversores</h2>
       <div class="inv" id="convs"></div>
     </div>
 
-    <div class="block">
+    <div class="block" id="elemBlock">
       <h2>Elementos</h2>
       <div class="inv" id="elems"></div>
     </div>
@@ -104,7 +119,7 @@
 
     <div class="block">
       <h2>Cómo se juega</h2>
-      <p class="hint"><b style="color:var(--txt)">Elige el tipo de cable</b> arriba y arrastra desde el <b style="color:var(--txt)">objetivo</b> de la cámara a una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo (suma metros); no puede cruzar columnas, y el público solo se cruza con un <b style="color:var(--txt)">pasacables</b> (que comparten varias cámaras). Toca un quiebre para quitarlo. Cada cámara tiene su <b style="color:var(--txt)">salida</b> (SDI/HDMI/IP) y la mesa solo acepta SDI: elige un <b style="color:var(--txt)">conversor</b> y toca una cámara o una entrada para colocarlo. La fibra llega lejos; el HDMI es corto; el IP va por Ethernet. Hay conversores de sobra: fíjate en el <b style="color:var(--txt)">sentido</b> (HDMI→SDI no es lo mismo que SDI→HDMI). El juego <b style="color:var(--txt)">no te avisa</b> si algo no encaja: debes saberlo. No te pases del <b style="color:var(--txt)">presupuesto</b>. Cuando lo tengas todo, pulsa <b style="color:var(--txt)">Ya lo tengo</b> para validar. Pellizca para acercar.</p>
+      <p class="hint">Elige el <b style="color:var(--txt)">tipo de cable</b> y arrastra desde el <b style="color:var(--txt)">objetivo</b> de la cámara a una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo (suma metros); rodea las butacas y cruza los <b style="color:var(--txt)">pasillos</b> con un pasacables (uno vale para varias). Si el nivel trae conversores, colócalos tocando cámara o entrada — ojo al sentido. El juego <b style="color:var(--txt)">no te avisa</b> si algo no encaja: pulsa <b style="color:var(--txt)">Ya lo tengo</b> para validar. Pellizca para acercar.</p>
     </div>
 
     <button id="validate">Ya lo tengo · Validar</button>
@@ -125,69 +140,82 @@
   </main>
 </div>
 
+<div id="menu" class="show">
+  <div class="eyebrow">CIFP TARTANGA · REALIZACIÓN</div>
+  <div class="menu-title">Elige un tipo de evento</div>
+  <div class="menu-sub">Cada recinto sube de dificultad en sus niveles.</div>
+  <div class="venues" id="venues"></div>
+</div>
+
 <script>
 "use strict";
 /* ============================================================
-   DATOS DEL NIVEL — todo en METROS (modelo del mundo real).
-   El alumno solo enruta; las posiciones son fijas en N1.
+   NIVELES — todo en METROS. Un "evento" es una lista de niveles.
+   Cada nivel declara su plano, zonas, cámaras, inventario y presupuesto.
    ============================================================ */
-const LEVEL = {
-  nombre:  "Nivel 3 · Formatos mixtos",
-  encargo: "4 cámaras con salidas distintas (SDI, HDMI, IP). La mesa solo acepta SDI: coloca conversores donde haga falta. El HDMI es de tramo corto (conviértelo en la cámara); el IP viaja por Ethernet (conviértelo en la mesa). Y no te pases de presupuesto.",
-  planoM:  { w:160, h:110 },  // dimensiones reales del recinto (metros)
-  escalaPxM: 7,               // ESCALA DEL PLANO: px por metro. Solo afecta al DIBUJO, no a la física.
-  mesa: { x:80, y:100, inputs:4, inFmt:"sdi" },   // la mesa solo acepta SDI
+const TEATRO_N1 = {
+  nombre:  "Teatro · Nivel 1",
+  encargo: "Lleva las 3 cámaras del escenario hasta la cabina del fondo. Rodea las butacas y cruza el pasillo con un pasacables (uno sirve para varias cámaras). El HD-SDI aguanta 100 m; para tiradas largas, fibra.",
+  planoM:  { w:104, h:64 },
+  escalaPxM: 11,
+  mesa: { x:90, y:32, inputs:3, inFmt:"sdi" },
   cams: [
-    { id:"CAM 1", x:80,  y:60, out:"sdi"  },
-    { id:"CAM 2", x:24,  y:34, out:"hdmi" },      // mirrorless → HDMI (tramo corto)
-    { id:"CAM 3", x:136, y:30, out:"ip"   },      // PTZ → IP por Ethernet
-    { id:"CAM 4", x:155, y:8,  out:"sdi"  },      // lejana → fuera de rango SDI, obliga a fibra
+    { id:"CAM 1", x:26, y:14, out:"sdi" },
+    { id:"CAM 2", x:26, y:50, out:"sdi" },
+    { id:"CAM 3", x:26, y:32, out:"sdi" },
   ],
-  // obstáculos: el cable no puede cruzarlos (hay que rodearlos con quiebres)
-  obstacles: [
-    { shape:"rect",   x:80,  y:76, w:44, h:16, label:"PÚBLICO", pass:"ramp" },  // cruzable SOLO con pasacables
-    { shape:"circle", x:44,  y:60, r:5 },
-    { shape:"circle", x:118, y:55, r:5 },
+  // zonas del recinto (kind define el comportamiento: stage=decor, pit/seating=bloqueo, aisle=cruce con pasacables)
+  zones: [
+    { shape:"rect", kind:"stage",   x:11.5, y:32, w:13, h:52, label:"ESCENARIO" },
+    { shape:"rect", kind:"pit",     x:22,   y:32, w:6,  h:48, label:"FOSO" },
+    { shape:"rect", kind:"seating", x:44,   y:32, w:28, h:24, label:"BUTACAS" },
+    { shape:"rect", kind:"aisle",   x:70,   y:32, w:12, h:52, label:"PASILLO" },
   ],
-  rampEur: 120,      // € por pasacables (coste ÚNICO: lo comparten todas las cámaras que pasen por él)
-  rampW:   10,       // ancho del pasacables (m)
-  // tipos de cable disponibles en el inventario (signal = formato que transportan)
+  rampEur: 120, rampW: 12,
   cableTypes: {
-    sdi:   { nombre:"HD-SDI",   signal:"sdi",  limite:100, eurM:3,   conv:0, color:"--cyan"  },
-    fibra: { nombre:"Fibra",    signal:"sdi",  limite:500, eurM:10,  conv:2, color:"--fiber" },
-    hdmi:  { nombre:"HDMI",     signal:"hdmi", limite:15,  eurM:1.5, conv:0, color:"--amber" },
-    eth:   { nombre:"Ethernet", signal:"ip",   limite:100, eurM:2,   conv:0, color:"--eth"   },
+    sdi:   { nombre:"HD-SDI", signal:"sdi", limite:100, eurM:3,  conv:0, color:"--cyan"  },
+    fibra: { nombre:"Fibra",  signal:"sdi", limite:500, eurM:10, conv:2, color:"--fiber" },
   },
-  // conversores (from→to). Están TODOS los sentidos: elegir el correcto es parte del reto.
-  converters: {
-    hdmi_sdi: { nombre:"HDMI→SDI", tag:"H→S", from:"hdmi", to:"sdi",  eur:180 },
-    sdi_hdmi: { nombre:"SDI→HDMI", tag:"S→H", from:"sdi",  to:"hdmi", eur:150 },
-    ip_sdi:   { nombre:"IP→SDI",   tag:"I→S", from:"ip",   to:"sdi",  eur:300 },
-    sdi_ip:   { nombre:"SDI→IP",   tag:"S→I", from:"sdi",  to:"ip",   eur:300 },
-    hdmi_ip:  { nombre:"HDMI→IP",  tag:"H→I", from:"hdmi", to:"ip",   eur:350 },
-    ip_hdmi:  { nombre:"IP→HDMI",  tag:"I→H", from:"ip",   to:"hdmi", eur:300 },
-  },
-  convEur: 250,      // € por conversor implícito de la fibra (usa 2 por tirada)
-  budget:  3000,     // tope de presupuesto (€)
+  converters: {},
+  convEur: 250,
+  budget: 2600,
 };
 
+const GAME = {
+  teatro:    { nombre:"Teatro",     sub:"Escenario a la izquierda, foso, butacas que rodear y pasillos con pasacables. Cabina al fondo.", niveles:[ TEATRO_N1 ] },
+  concierto: { nombre:"Concierto",  sub:"Grandes distancias (fibra), público de pie enorme, torre FOH. Escenario a la izquierda.", niveles:[], soon:true },
+  setTV:     { nombre:"Set de TV",  sub:"Formatos mixtos y conversores, control en sala aparte. Mesa arriba, cámaras abajo.", niveles:[], soon:true },
+};
+
+/* ============================================================
+   ESTADO (se reinicia en cargarNivel)
+   ============================================================ */
 const SVGNS="http://www.w3.org/2000/svg";
 const svg=document.getElementById("plano");
-const S=LEVEL.escalaPxM;
-const m=v=>v*S;                                   // metros → px de dibujo
-const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);    // distancia en METROS (coords ya son metros)
+svg.setAttribute("preserveAspectRatio","xMidYMid meet");
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 
-/* --- geometría de obstáculos (todo en metros) --- */
-function segCircle(a,b,c,r){                       // ¿el segmento a-b toca el círculo c,r?
+let LEVEL=null, S=10, inputs=[], cams=[], VBW=0, VBH=0;
+const m=v=>v*S;                                   // metros → px de dibujo (lee la S actual)
+
+let cables=[], camConv=[], inConv=[], ramps=[];
+let curType=null, curConv=null, mode="cable", locked=false;
+const ctOf=ci=>LEVEL.cableTypes[cables[ci].type];
+
+/* ============================================================
+   GEOMETRÍA
+   ============================================================ */
+function segCircle(a,b,c,r){
   const dx=b.x-a.x, dy=b.y-a.y, l2=dx*dx+dy*dy||1e-9;
   let t=((c.x-a.x)*dx+(c.y-a.y)*dy)/l2; t=Math.max(0,Math.min(1,t));
   return Math.hypot(a.x+t*dx-c.x, a.y+t*dy-c.y)<=r;
 }
-function segRect(a,b,o){                           // ¿el segmento a-b toca el rectángulo (centro x,y; w,h)?
+function segRect(a,b,o){
   const x0=o.x-o.w/2,x1=o.x+o.w/2,y0=o.y-o.h/2,y1=o.y+o.h/2;
   const inside=p=>p.x>=x0&&p.x<=x1&&p.y>=y0&&p.y<=y1;
   if(inside(a)||inside(b))return true;
-  const ss=(p,q,r,s)=>{                            // ¿se cruzan los segmentos p-q y r-s?
+  const ss=(p,q,r,s)=>{
     const d=(q.x-p.x)*(s.y-r.y)-(q.y-p.y)*(s.x-r.x); if(!d)return false;
     const t=((r.x-p.x)*(s.y-r.y)-(r.y-p.y)*(s.x-r.x))/d;
     const u=((r.x-p.x)*(q.y-p.y)-(r.y-p.y)*(q.x-p.x))/d;
@@ -196,13 +224,11 @@ function segRect(a,b,o){                           // ¿el segmento a-b toca el 
   const c=[{x:x0,y:y0},{x:x1,y:y0},{x:x1,y:y1},{x:x0,y:y1}];
   return ss(a,b,c[0],c[1])||ss(a,b,c[1],c[2])||ss(a,b,c[2],c[3])||ss(a,b,c[3],c[0]);
 }
-function hitsObstacle(a,b){
-  return (LEVEL.obstacles||[]).some(o=> o.shape==="circle" ? segCircle(a,b,o,o.r) : segRect(a,b,o));
+function zoneBlock(z){                             // cómo se comporta cada zona ante el cable
+  if(z.kind==="aisle") return "ramp";              // cruzable con pasacables
+  if(z.kind==="stage") return "none";              // decorativa, no bloquea
+  return "hard";                                   // pit, seating, wall, column…
 }
-const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-
-svg.setAttribute("viewBox",`0 0 ${m(LEVEL.planoM.w)} ${m(LEVEL.planoM.h)}`);
-svg.setAttribute("preserveAspectRatio","xMidYMid meet");
 
 function el(tag,attrs={},parent){
   const e=document.createElementNS(SVGNS,tag);
@@ -211,94 +237,67 @@ function el(tag,attrs={},parent){
   return e;
 }
 
-/* --- puertos de entrada de la mesa (posición en metros) --- */
-const inputs=[];
-for(let i=0;i<LEVEL.mesa.inputs;i++){
-  inputs.push({x:LEVEL.mesa.x+(i-(LEVEL.mesa.inputs-1)/2)*6, y:LEVEL.mesa.y-4});
-}
-/* --- objetivo (salida SDI) de cada cámara, en metros --- */
-const cams=LEVEL.cams.map(c=>({...c, port:{x:c.x, y:c.y+4}}));
-
-/* --- estado: cables[camIdx] = { input, type, wps:[{x,y}...] } | null (wps=quiebres, en metros) --- */
-let cables=new Array(cams.length).fill(null);
-let curType=Object.keys(LEVEL.cableTypes)[0];     // tipo de cable seleccionado en el inventario
-const ctOf=ci=>LEVEL.cableTypes[cables[ci].type]; // tipo del cable de la cámara ci
-let locked=false;                                 // true tras validar: bloquea ediciones y revela fallos
-let curConv=null, mode="cable";                   // conversor seleccionado / modo del inventario ("cable"|"conv")
-let camConv=new Array(LEVEL.cams.length).fill(null);   // conversor en la salida de cada cámara
-let inConv=new Array(LEVEL.mesa.inputs).fill(null);    // conversor en cada entrada de la mesa
-let ramps=[];                                          // pasacables sobre el público: {cx,w} (comparten coste)
-function effOut(ci){                               // formato efectivo de salida de la cámara
-  const k=camConv[ci]; if(!k) return cams[ci].out;
-  const cv=LEVEL.converters[k];
-  return cv.from===cams[ci].out ? cv.to : null;   // conversor en sentido equivocado → sin señal válida
-}
-function effIn(j){                                 // formato que acepta la entrada de la mesa
-  const k=inConv[j]; if(!k) return LEVEL.mesa.inFmt;
-  const cv=LEVEL.converters[k];
-  return cv.to===LEVEL.mesa.inFmt ? cv.from : null; // conversor mal orientado hacia la mesa → inválido
-}
-
-/* ============================================================
-   DIBUJO ESTÁTICO (rejilla, escenario, mesa, cámaras)
-   ============================================================ */
 const content=el("g",{},svg);      // grupo que se escala/desplaza con el zoom
 const gStatic=el("g",{},content);
 const gCables=el("g",{},content);
 const gTemp=el("g",{},content);
 const gPorts=el("g",{},content);
 
+/* ============================================================
+   DIBUJO ESTÁTICO
+   ============================================================ */
 function drawStatic(){
-  // fondo
+  gStatic.innerHTML=""; gPorts.innerHTML=""; gTemp.innerHTML="";
   el("rect",{x:0,y:0,width:m(LEVEL.planoM.w),height:m(LEVEL.planoM.h),fill:css("--bg")},gStatic);
-  // rejilla cada 10 m
   for(let x=0;x<=LEVEL.planoM.w;x+=10)
     el("line",{x1:m(x),y1:0,x2:m(x),y2:m(LEVEL.planoM.h),stroke:css("--grid"),"stroke-width":1},gStatic);
   for(let y=0;y<=LEVEL.planoM.h;y+=10)
     el("line",{x1:0,y1:m(y),x2:m(LEVEL.planoM.w),y2:m(y),stroke:css("--grid"),"stroke-width":1},gStatic);
 
-  // escenario (banda superior)
-  el("rect",{x:m(6),y:m(4),width:m(108),height:m(11),fill:"none",stroke:css("--line"),"stroke-width":1.5,rx:3},gStatic);
-  const st=el("text",{x:m(60),y:m(11),fill:css("--dim"),"font-size":13,"letter-spacing":"4","text-anchor":"middle"},gStatic);
-  st.textContent="E S C E N A R I O";
-
-  // obstáculos (el cable debe rodearlos)
-  (LEVEL.obstacles||[]).forEach(o=>{
-    if(o.shape==="circle"){
-      el("circle",{cx:m(o.x),cy:m(o.y),r:m(o.r),fill:css("--line"),stroke:css("--dim"),"stroke-width":1.5},gStatic);
-      el("circle",{cx:m(o.x),cy:m(o.y),r:m(o.r)*0.45,fill:"none",stroke:css("--dim"),"stroke-width":1},gStatic);
-    }else{
-      el("rect",{x:m(o.x-o.w/2),y:m(o.y-o.h/2),width:m(o.w),height:m(o.h),fill:"rgba(92,107,103,.10)",stroke:css("--dim"),"stroke-width":1.2,"stroke-dasharray":"6 5",rx:2},gStatic);
-      if(o.label){const t=el("text",{x:m(o.x),y:m(o.y)+4,fill:css("--dim"),"font-size":12,"letter-spacing":"3","text-anchor":"middle"},gStatic);t.textContent=o.label;}
+  // zonas
+  (LEVEL.zones||[]).forEach(z=>{
+    if(z.shape==="circle"){
+      el("circle",{cx:m(z.x),cy:m(z.y),r:m(z.r),fill:css("--line"),stroke:css("--dim"),"stroke-width":1.5},gStatic);
+      el("circle",{cx:m(z.x),cy:m(z.y),r:m(z.r)*0.45,fill:"none",stroke:css("--dim"),"stroke-width":1},gStatic);
+      return;
+    }
+    let fill="rgba(92,107,103,.12)", stroke=css("--dim"), dash=null;
+    if(z.kind==="stage"){ fill="none"; stroke=css("--cyan"); }
+    else if(zoneBlock(z)==="ramp"){ fill="rgba(255,180,39,.05)"; stroke=css("--amber"); dash="6 6"; }
+    const a={x:m(z.x-z.w/2),y:m(z.y-z.h/2),width:m(z.w),height:m(z.h),rx:3,fill:fill,stroke:stroke,"stroke-width":1.4};
+    if(dash)a["stroke-dasharray"]=dash;
+    el("rect",a,gStatic);
+    if(z.label){
+      const t=el("text",{x:m(z.x),y:m(z.y)+3,fill:stroke,"font-size":11,"letter-spacing":"2","text-anchor":"middle"},gStatic);
+      t.textContent=z.label;
     }
   });
 
   // barra de escala (20 m)
-  const bx=m(6), by=m(LEVEL.planoM.h-5);
+  const bx=m(5), by=m(LEVEL.planoM.h-4);
   el("line",{x1:bx,y1:by,x2:bx+m(20),y2:by,stroke:css("--dim"),"stroke-width":2},gStatic);
   el("line",{x1:bx,y1:by-5,x2:bx,y2:by+5,stroke:css("--dim"),"stroke-width":2},gStatic);
   el("line",{x1:bx+m(20),y1:by-5,x2:bx+m(20),y2:by+5,stroke:css("--dim"),"stroke-width":2},gStatic);
-  const sl=el("text",{x:bx+m(10),y:by-8,fill:css("--dim"),"font-size":12,"text-anchor":"middle"},gStatic);
+  const sl=el("text",{x:bx+m(10),y:by-8,fill:css("--dim"),"font-size":11,"text-anchor":"middle"},gStatic);
   sl.textContent="20 m";
 
-  // mesa de realización
-  const mw=26,mh=9;
+  // mesa / cabina
+  const mw=26,mh=10;
   el("rect",{x:m(LEVEL.mesa.x-mw/2),y:m(LEVEL.mesa.y-mh/2),width:m(mw),height:m(mh),fill:css("--panel"),stroke:css("--line"),"stroke-width":1.5,rx:3},gStatic);
-  const ml=el("text",{x:m(LEVEL.mesa.x),y:m(LEVEL.mesa.y+2),fill:css("--dim"),"font-size":11,"letter-spacing":"2","text-anchor":"middle"},gStatic);
-  ml.textContent="MESA DE REALIZACIÓN";
+  const ml=el("text",{x:m(LEVEL.mesa.x),y:m(LEVEL.mesa.y+2),fill:css("--dim"),"font-size":9,"letter-spacing":"1","text-anchor":"middle"},gStatic);
+  ml.textContent="MESA / CABINA";
   inputs.forEach((p,i)=>{
     el("circle",{cx:m(p.x),cy:m(p.y),r:8,fill:css("--bg"),stroke:css("--dim"),"stroke-width":1.5,"data-in":i,class:"inport"},gPorts);
-    const t=el("text",{x:m(p.x),y:m(p.y)-14,fill:css("--dim"),"font-size":10,"text-anchor":"middle"},gStatic);
+    const t=el("text",{x:m(p.x),y:m(p.y)-13,fill:css("--dim"),"font-size":9,"text-anchor":"middle"},gStatic);
     t.textContent="IN"+(i+1);
   });
 
-  // cámaras + objetivo (puerto de salida)
+  // cámaras + objetivo
   cams.forEach((c,i)=>{
-    el("circle",{cx:m(c.x),cy:m(c.y),r:m(2.6),fill:css("--panel"),stroke:css("--cyan"),"stroke-width":2},gStatic);
-    el("circle",{cx:m(c.x),cy:m(c.y),r:m(1.1),fill:css("--bg"),stroke:css("--cyan"),"stroke-width":1.5},gStatic);
-    const lb=el("text",{x:m(c.x),y:m(c.y)-m(3.6),fill:css("--txt"),"font-size":13,"letter-spacing":"1.5","text-anchor":"middle"},gStatic);
+    el("circle",{cx:m(c.x),cy:m(c.y),r:m(2.4),fill:css("--panel"),stroke:css("--cyan"),"stroke-width":2},gStatic);
+    el("circle",{cx:m(c.x),cy:m(c.y),r:m(1),fill:css("--bg"),stroke:css("--cyan"),"stroke-width":1.5},gStatic);
+    const lb=el("text",{x:m(c.x),y:m(c.y)-m(3.4),fill:css("--txt"),"font-size":12,"letter-spacing":"1","text-anchor":"middle"},gStatic);
     lb.textContent=c.id+" · "+c.out.toUpperCase();
-    // puerto arrastrable (objetivo SDI OUT) — hit area generosa
     el("circle",{cx:m(c.port.x),cy:m(c.port.y),r:8,fill:css("--cyan")},gPorts);
     el("circle",{cx:m(c.port.x),cy:m(c.port.y),r:16,fill:"transparent",style:"cursor:grab","data-cam":i,class:"outport"},gPorts);
   });
@@ -307,106 +306,92 @@ function drawStatic(){
 /* ============================================================
    CABLES + VALIDACIÓN
    ============================================================ */
-function pathPoints(ci){                              // recorrido completo (metros)
-  const c=cables[ci];
-  return [cams[ci].port, ...c.wps, inputs[c.input]];
-}
-function pathLen(ci){                                 // longitud sumando segmentos (metros)
-  const p=pathPoints(ci); let L=0;
-  for(let i=0;i<p.length-1;i++)L+=dist(p[i],p[i+1]);
-  return L;
-}
-function crossingCoveredByRamp(a,b,o){               // ¿el tramo dentro del público va por un pasacables?
-  const x0=o.x-o.w/2,x1=o.x+o.w/2,y0=o.y-o.h/2,y1=o.y+o.h/2, N=24;
+function pathPoints(ci){ const c=cables[ci]; return [cams[ci].port, ...c.wps, inputs[c.input]]; }
+function pathLen(ci){ const p=pathPoints(ci); let L=0; for(let i=0;i<p.length-1;i++)L+=dist(p[i],p[i+1]); return L; }
+const inRamp=(x,y)=>ramps.some(r=>Math.abs(x-r.x)<=LEVEL.rampW/2 && Math.abs(y-r.y)<=LEVEL.rampW/2);
+function crossingCoveredByRamp(a,b,z){             // ¿el tramo dentro del pasillo va por un pasacables?
+  const x0=z.x-z.w/2,x1=z.x+z.w/2,y0=z.y-z.h/2,y1=z.y+z.h/2, N=24;
   for(let s=0;s<=N;s++){
     const t=s/N, x=a.x+(b.x-a.x)*t, y=a.y+(b.y-a.y)*t;
-    if(x>=x0&&x<=x1&&y>=y0&&y<=y1 && !ramps.some(r=>x>=r.cx-r.w/2&&x<=r.cx+r.w/2)) return false;
+    if(x>=x0&&x<=x1&&y>=y0&&y<=y1 && !inRamp(x,y)) return false;
   }
   return true;
 }
-function crossHard(ci){                               // cruza columna u obstáculo duro (siempre prohibido)
+function crossHard(ci){
   const p=pathPoints(ci);
-  for(let i=0;i<p.length-1;i++) for(const o of (LEVEL.obstacles||[]))
-    if(o.pass!=="ramp" && (o.shape==="circle"?segCircle(p[i],p[i+1],o,o.r):segRect(p[i],p[i+1],o))) return true;
+  for(let i=0;i<p.length-1;i++) for(const z of (LEVEL.zones||[]))
+    if(zoneBlock(z)==="hard" && (z.shape==="circle"?segCircle(p[i],p[i+1],z,z.r):segRect(p[i],p[i+1],z))) return true;
   return false;
 }
-function crossPublicoBare(ci){                        // cruza el público sin pasacables
+function crossAisleBare(ci){
   const p=pathPoints(ci);
-  for(let i=0;i<p.length-1;i++) for(const o of (LEVEL.obstacles||[]))
-    if(o.pass==="ramp" && segRect(p[i],p[i+1],o) && !crossingCoveredByRamp(p[i],p[i+1],o)) return true;
+  for(let i=0;i<p.length-1;i++) for(const z of (LEVEL.zones||[]))
+    if(zoneBlock(z)==="ramp" && segRect(p[i],p[i+1],z) && !crossingCoveredByRamp(p[i],p[i+1],z)) return true;
   return false;
 }
-function cableCross(ci){ return crossHard(ci)||crossPublicoBare(ci); }
+function cableCross(ci){ return crossHard(ci)||crossAisleBare(ci); }
+
 function redrawCables(){
   gCables.innerHTML="";
-  // pasacables (bandas sobre el público; bajo los cables)
-  const pubRamp=LEVEL.obstacles.find(o=>o.pass==="ramp");
-  if(pubRamp) ramps.forEach(r=>{
-    el("rect",{x:m(r.cx-r.w/2),y:m(pubRamp.y-pubRamp.h/2),width:m(r.w),height:m(pubRamp.h),fill:"rgba(255,180,39,.14)",stroke:css("--amber"),"stroke-width":1.5,"stroke-dasharray":"5 4","pointer-events":"none"},gCables);
-    const t=el("text",{x:m(r.cx),y:m(pubRamp.y)+3,fill:css("--amber"),"font-size":8,"letter-spacing":"0.5","text-anchor":"middle","pointer-events":"none"},gCables); t.textContent="PASACABLES";
+  ramps.forEach(r=>{
+    el("rect",{x:m(r.x-LEVEL.rampW/2),y:m(r.y-LEVEL.rampW/2),width:m(LEVEL.rampW),height:m(LEVEL.rampW),rx:3,fill:"rgba(255,180,39,.16)",stroke:css("--amber"),"stroke-width":1.5,"stroke-dasharray":"5 4","pointer-events":"none"},gCables);
   });
   cables.forEach((c,ci)=>{
     if(!c)return;
     const p=pathPoints(ci), len=pathLen(ci), ct=ctOf(ci);
     const fmtOk=(ct.signal===effOut(ci) && ct.signal===effIn(c.input));
     const invalid=cableCross(ci)||len>ct.limite||!fmtOk;
-    const col=(locked&&invalid)?css("--red"):css(ct.color);   // el color solo revela fallos tras validar
-    // segmentos: visible + hit invisible (con índice para insertar quiebre)
+    const col=(locked&&invalid)?css("--red"):css(ct.color);
     for(let i=0;i<p.length-1;i++){
       const a=p[i], b=p[i+1];
       el("line",{x1:m(a.x),y1:m(a.y),x2:m(b.x),y2:m(b.y),stroke:col,"stroke-width":3.5},gCables);
       el("line",{x1:m(a.x),y1:m(a.y),x2:m(b.x),y2:m(b.y),stroke:"transparent","stroke-width":22,"data-cam":ci,"data-seg":i,class:"seg",style:"cursor:crosshair"},gCables);
     }
-    // conversores en los extremos (solo cables que los requieren, p.ej. fibra)
     if(ct.conv>0){
       [p[0],p[p.length-1]].forEach(q=>{
         el("rect",{x:m(q.x)-9,y:m(q.y)-9,width:18,height:18,rx:3,fill:css("--panel"),stroke:col,"stroke-width":2},gCables);
-        const ct2=el("text",{x:m(q.x),y:m(q.y)+4,fill:col,"font-size":11,"font-weight":"bold","text-anchor":"middle"},gCables);
-        ct2.textContent="C";
+        const t=el("text",{x:m(q.x),y:m(q.y)+4,fill:col,"font-size":11,"font-weight":"bold","text-anchor":"middle"},gCables); t.textContent="C";
       });
     }
-    // manijas de quiebre (arrastrar para mover, tocar para quitar)
     c.wps.forEach((w,wi)=>{
       el("circle",{cx:m(w.x),cy:m(w.y),r:6,fill:css("--bg"),stroke:col,"stroke-width":2},gCables);
       el("circle",{cx:m(w.x),cy:m(w.y),r:15,fill:"transparent","data-cam":ci,"data-wp":wi,class:"wp",style:"cursor:grab"},gCables);
     });
-    // etiqueta de longitud total, en el centro del recorrido
     const cx=p.reduce((s,q)=>s+q.x,0)/p.length, cy=p.reduce((s,q)=>s+q.y,0)/p.length;
     el("rect",{x:m(cx)-32,y:m(cy)-13,width:64,height:22,rx:4,fill:css("--bg"),stroke:col,"stroke-width":1,opacity:.92},gCables);
     const t=el("text",{x:m(cx),y:m(cy)+3,fill:col,"font-size":14,"font-weight":"bold","text-anchor":"middle"},gCables);
     t.textContent=len.toFixed(0)+" m";
   });
-  // insignias de conversores colocados en puertos (rojas si están mal orientadas y ya se validó)
+  // insignias de conversores
   const badge=(pos,tag,bad)=>{
     const c=(locked&&bad)?css("--red"):css("--txt");
     el("rect",{x:m(pos.x)+7,y:m(pos.y)-22,width:34,height:16,rx:3,fill:css("--panel"),stroke:c,"stroke-width":1},gCables);
-    const t=el("text",{x:m(pos.x)+24,y:m(pos.y)-10,fill:c,"font-size":10,"font-weight":"bold","text-anchor":"middle"},gCables);
-    t.textContent=tag;
+    const t=el("text",{x:m(pos.x)+24,y:m(pos.y)-10,fill:c,"font-size":10,"font-weight":"bold","text-anchor":"middle"},gCables); t.textContent=tag;
   };
   camConv.forEach((k,ci)=>{ if(k){const cv=LEVEL.converters[k]; badge(cams[ci].port, cv.tag, cv.from!==cams[ci].out);} });
   inConv.forEach((k,j)=>{ if(k){const cv=LEVEL.converters[k]; badge(inputs[j], cv.tag, cv.to!==LEVEL.mesa.inFmt);} });
 }
+function effOut(ci){
+  const k=camConv[ci]; if(!k) return cams[ci].out;
+  const cv=LEVEL.converters[k]; return cv.from===cams[ci].out ? cv.to : null;
+}
+function effIn(j){
+  const k=inConv[j]; if(!k) return LEVEL.mesa.inFmt;
+  const cv=LEVEL.converters[k]; return cv.to===LEVEL.mesa.inFmt ? cv.from : null;
+}
 
 /* ============================================================
-   INTERACCIÓN (pointer = táctil + ratón unificados)
+   INTERACCIÓN (pointer = táctil + ratón)
    ============================================================ */
-let drag=null;
-const pointers=new Map();         // dedos activos (pointerId → {x,y} pantalla)
-let pinch=null;
-const zoom={k:1,tx:0,ty:0};       // escala + desplazamiento del grupo de contenido (en viewBox)
-const VBW=m(LEVEL.planoM.w), VBH=m(LEVEL.planoM.h);
+let drag=null, pinch=null;
+const pointers=new Map();
+const zoom={k:1,tx:0,ty:0};
 
-function toSvg(evt){                                   // pantalla → coords de contenido (metros·escala)
-  const pt=svg.createSVGPoint(); pt.x=evt.clientX; pt.y=evt.clientY;
-  return pt.matrixTransform(content.getScreenCTM().inverse());
-}
-function toVB(cx,cy){                                  // pantalla → coords de viewBox (sin el zoom)
-  const pt=svg.createSVGPoint(); pt.x=cx; pt.y=cy;
-  return pt.matrixTransform(svg.getScreenCTM().inverse());
-}
+function toSvg(evt){ const pt=svg.createSVGPoint(); pt.x=evt.clientX; pt.y=evt.clientY; return pt.matrixTransform(content.getScreenCTM().inverse()); }
+function toVB(cx,cy){ const pt=svg.createSVGPoint(); pt.x=cx; pt.y=cy; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
 function applyZoom(){
   zoom.k=Math.max(1,Math.min(6,zoom.k));
-  zoom.tx=Math.max(VBW*(1-zoom.k),Math.min(0,zoom.tx));   // el plano cubre siempre la vista
+  zoom.tx=Math.max(VBW*(1-zoom.k),Math.min(0,zoom.tx));
   zoom.ty=Math.max(VBH*(1-zoom.k),Math.min(0,zoom.ty));
   content.setAttribute("transform",`translate(${zoom.tx} ${zoom.ty}) scale(${zoom.k})`);
 }
@@ -415,7 +400,7 @@ const d2=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const mid=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
 
 function startPinch(){
-  if(drag){ if(drag.kind==="new")gTemp.innerHTML=""; drag=null; }         // cancelar gesto de 1 dedo
+  if(drag){ if(drag.kind==="new")gTemp.innerHTML=""; drag=null; }
   const [a,b]=[...pointers.values()], mv=toVB(mid(a,b).x,mid(a,b).y);
   pinch={ d0:d2(a,b), k0:zoom.k, L:{x:(mv.x-zoom.tx)/zoom.k, y:(mv.y-zoom.ty)/zoom.k} };
 }
@@ -423,56 +408,46 @@ function updatePinch(){
   const [a,b]=[...pointers.values()]; if(!a||!b)return;
   const d=d2(a,b); if(d<1)return;
   zoom.k=Math.max(1,Math.min(6,pinch.k0*(d/pinch.d0)));
-  const mv=toVB(mid(a,b).x,mid(a,b).y);                 // anclar el punto L bajo el centro de los dedos
-  zoom.tx=mv.x-zoom.k*pinch.L.x; zoom.ty=mv.y-zoom.k*pinch.L.y;
-  applyZoom();
+  const mv=toVB(mid(a,b).x,mid(a,b).y);
+  zoom.tx=mv.x-zoom.k*pinch.L.x; zoom.ty=mv.y-zoom.k*pinch.L.y; applyZoom();
 }
 
 svg.addEventListener("pointerdown",e=>{
-  try{svg.setPointerCapture(e.pointerId);}catch(_){}   // en algún caso límite puede lanzar; no abortar el gesto
+  if(!LEVEL)return;
+  try{svg.setPointerCapture(e.pointerId);}catch(_){}
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(pointers.size===2){ startPinch(); return; }        // segundo dedo → pellizco
+  if(pointers.size===2){ startPinch(); return; }
   if(pointers.size>2) return;
-  if(locked){                                           // instalación validada → solo mirar (pan/zoom)
-    drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty};
-    return;
-  }
+  if(locked){ drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return; }
   const t=e.target;
-  if(mode==="conv" && curConv){                         // modo conversor: colocar en cualquier puerto
-    if(t.classList.contains("outport")){                // (aunque esté en sentido equivocado: se avisa al validar)
-      const ci=+t.dataset.cam;
-      camConv[ci]=(camConv[ci]===curConv?null:curConv);
-      redrawCables(); updateHUD(); return;
-    }
-    if(t.classList.contains("inport")){
-      const j=+t.dataset.in;
-      inConv[j]=(inConv[j]===curConv?null:curConv);
+  if(mode==="conv" && curConv){                         // colocar conversor en cualquier puerto
+    if(t.classList.contains("outport")){ const ci=+t.dataset.cam; camConv[ci]=(camConv[ci]===curConv?null:curConv); redrawCables(); updateHUD(); return; }
+    if(t.classList.contains("inport")){ const j=+t.dataset.in; inConv[j]=(inConv[j]===curConv?null:curConv); redrawCables(); updateHUD(); return; }
+    drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
+  }
+  if(mode==="ramp"){                                    // colocar/quitar pasacables tocando un pasillo
+    const p=toSvg(e), mx=p.x/S, my=p.y/S;
+    const z=(LEVEL.zones||[]).find(z=>zoneBlock(z)==="ramp" && z.shape!=="circle" && mx>=z.x-z.w/2 && mx<=z.x+z.w/2 && my>=z.y-z.h/2 && my<=z.y+z.h/2);
+    if(z){
+      const hit=ramps.findIndex(r=>Math.abs(mx-r.x)<=LEVEL.rampW/2 && Math.abs(my-r.y)<=LEVEL.rampW/2);
+      if(hit>=0) ramps.splice(hit,1); else ramps.push({x:mx,y:my});
       redrawCables(); updateHUD(); return;
     }
     drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
   }
-  if(mode==="ramp"){                                    // colocar/quitar pasacables tocando el público
-    const p=toSvg(e), mx=p.x/S, my=p.y/S, pub=LEVEL.obstacles.find(o=>o.pass==="ramp");
-    if(pub && mx>=pub.x-pub.w/2 && mx<=pub.x+pub.w/2 && my>=pub.y-pub.h/2 && my<=pub.y+pub.h/2){
-      const hit=ramps.findIndex(r=>mx>=r.cx-r.w/2&&mx<=r.cx+r.w/2);
-      if(hit>=0) ramps.splice(hit,1); else ramps.push({cx:mx,w:LEVEL.rampW});
-      redrawCables(); updateHUD(); return;
-    }
-    drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
-  }
-  if(t.classList.contains("outport")){                  // nuevo cable
+  if(t.classList.contains("outport")){
     const ci=+t.dataset.cam;
     if(cables[ci]){cables[ci]=null;redrawCables();updateHUD();}
     const p=cams[ci].port;
     drag={kind:"new",ci,line:el("line",{x1:m(p.x),y1:m(p.y),x2:m(p.x),y2:m(p.y),stroke:css(LEVEL.cableTypes[curType].color),"stroke-width":3,"stroke-dasharray":"6 5",opacity:.8},gTemp)};
-  }else if(t.classList.contains("wp")){                 // mover/quitar quiebre
+  }else if(t.classList.contains("wp")){
     drag={kind:"wp",ci:+t.dataset.cam,wp:+t.dataset.wp,moved:false,sx:e.clientX,sy:e.clientY};
-  }else if(t.classList.contains("seg")){                // agarrar segmento → nace quiebre
+  }else if(t.classList.contains("seg")){
     const ci=+t.dataset.cam, seg=+t.dataset.seg, p=toSvg(e);
     cables[ci].wps.splice(seg,0,{x:p.x/S,y:p.y/S});
     drag={kind:"wp",ci,wp:seg,moved:true,sx:e.clientX,sy:e.clientY};
     redrawCables(); updateHUD();
-  }else{                                                // fondo vacío → desplazar
+  }else{
     drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty};
   }
 });
@@ -481,16 +456,9 @@ svg.addEventListener("pointermove",e=>{
   if(pointers.has(e.pointerId)) pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pinch){ updatePinch(); return; }
   if(!drag)return;
-  if(drag.kind==="new"){
-    const p=toSvg(e); drag.line.setAttribute("x2",p.x); drag.line.setAttribute("y2",p.y);
-  }else if(drag.kind==="pan"){
-    const a=toVB(drag.sx,drag.sy), b=toVB(e.clientX,e.clientY);
-    zoom.tx=drag.tx0+(b.x-a.x); zoom.ty=drag.ty0+(b.y-a.y); applyZoom();
-  }else{                                                // moviendo quiebre
-    if(Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>6)drag.moved=true;
-    const p=toSvg(e); cables[drag.ci].wps[drag.wp]={x:p.x/S,y:p.y/S};
-    redrawCables(); updateHUD();
-  }
+  if(drag.kind==="new"){ const p=toSvg(e); drag.line.setAttribute("x2",p.x); drag.line.setAttribute("y2",p.y); }
+  else if(drag.kind==="pan"){ const a=toVB(drag.sx,drag.sy), b=toVB(e.clientX,e.clientY); zoom.tx=drag.tx0+(b.x-a.x); zoom.ty=drag.ty0+(b.y-a.y); applyZoom(); }
+  else{ if(Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>6)drag.moved=true; const p=toSvg(e); cables[drag.ci].wps[drag.wp]={x:p.x/S,y:p.y/S}; redrawCables(); updateHUD(); }
 });
 
 function endPointer(e){
@@ -498,30 +466,22 @@ function endPointer(e){
   pointers.delete(e.pointerId);
   if(wasPinch){
     if(pointers.size<2) pinch=null;
-    if(pointers.size===1){ const [only]=[...pointers.values()]; drag={kind:"pan",sx:only.x,sy:only.y,tx0:zoom.tx,ty0:zoom.ty}; }
-    else drag=null;
+    if(pointers.size===1){ const [only]=[...pointers.values()]; drag={kind:"pan",sx:only.x,sy:only.y,tx0:zoom.tx,ty0:zoom.ty}; } else drag=null;
     return;
   }
   if(!drag)return;
   if(drag.kind==="new"){
     const p=toSvg(e); let best=-1,bd=1e9;
-    inputs.forEach((ip,i)=>{
-      if(usedInputs().includes(i))return;
-      const d=Math.hypot(p.x-m(ip.x),p.y-m(ip.y));
-      if(d<bd){bd=d;best=i;}
-    });
+    inputs.forEach((ip,i)=>{ if(usedInputs().includes(i))return; const d=Math.hypot(p.x-m(ip.x),p.y-m(ip.y)); if(d<bd){bd=d;best=i;} });
     if(best>=0 && bd<m(4)) cables[drag.ci]={input:best,type:curType,wps:[]};
     gTemp.innerHTML="";
-  }else if(drag.kind==="wp" && !drag.moved){            // toque sin mover → quitar quiebre
-    cables[drag.ci].wps.splice(drag.wp,1);
-  }
+  }else if(drag.kind==="wp" && !drag.moved){ cables[drag.ci].wps.splice(drag.wp,1); }
   drag=null; redrawCables(); updateHUD();
 }
 svg.addEventListener("pointerup",endPointer);
 svg.addEventListener("pointercancel",endPointer);
-
-// rueda del ratón: zoom en escritorio (para probar en portátil)
 svg.addEventListener("wheel",e=>{
+  if(!LEVEL)return;
   e.preventDefault();
   const mv=toVB(e.clientX,e.clientY), L={x:(mv.x-zoom.tx)/zoom.k, y:(mv.y-zoom.ty)/zoom.k};
   zoom.k=Math.max(1,Math.min(6, zoom.k*(e.deltaY<0?1.12:1/1.12)));
@@ -529,7 +489,7 @@ svg.addEventListener("wheel",e=>{
 },{passive:false});
 
 /* ============================================================
-   HUD + VICTORIA
+   HUD + VALIDACIÓN
    ============================================================ */
 function totals(){
   let conn=0,total=0,convs=0,cost=0,allOk=true;
@@ -543,9 +503,8 @@ function totals(){
   });
   camConv.forEach(k=>{if(k){convs++;cost+=LEVEL.converters[k].eur;}});
   inConv.forEach(k=>{if(k){convs++;cost+=LEVEL.converters[k].eur;}});
-  cost+=ramps.length*LEVEL.rampEur;                  // pasacables: coste por unidad (compartido)
-  const within=cost<=LEVEL.budget;
-  return {conn,total,convs,cost,allOk,within,ramps:ramps.length};
+  cost+=ramps.length*LEVEL.rampEur;
+  return {conn,total,convs,cost,allOk,within:cost<=LEVEL.budget,ramps:ramps.length};
 }
 function updateHUD(){
   const t=totals();
@@ -553,35 +512,31 @@ function updateHUD(){
   document.getElementById("s-total").textContent=`${t.total.toFixed(0)} m`;
   document.getElementById("s-conv").textContent=`${t.convs}`;
   document.getElementById("s-ramps").textContent=`${t.ramps}`;
-  document.getElementById("s-budget").textContent=`${t.cost.toFixed(0)} / ${LEVEL.budget} €`;  // neutro: no revela si te pasas
+  document.getElementById("s-budget").textContent=`${t.cost.toFixed(0)} / ${LEVEL.budget} €`;
 }
-function validate(){                                  // "Ya lo tengo": evalúa, explica y bloquea
+function validate(){
   const problemas=[];
   cables.forEach((c,ci)=>{
     const name=cams[ci].id;
     if(!c){ problemas.push(`${name}: sin conectar a la mesa.`); return; }
     const ct=LEVEL.cableTypes[c.type], len=pathLen(ci);
-    if(crossHard(ci)) problemas.push(`${name}: el cable cruza una columna u obstáculo.`);
-    if(crossPublicoBare(ci)) problemas.push(`${name}: el cable cruza el público sin pasacables (cable pisable).`);
-    if(len>ct.limite)  problemas.push(`${name}: ${len.toFixed(0)} m con ${ct.nombre} supera su límite de ${ct.limite} m.`);
-    // conversores en sentido equivocado (el error típico: SDI→HDMI en vez de HDMI→SDI)
+    if(crossHard(ci)) problemas.push(`${name}: el cable cruza las butacas, el foso u otro obstáculo.`);
+    if(crossAisleBare(ci)) problemas.push(`${name}: el cable cruza un pasillo sin pasacables (cable pisable).`);
+    if(len>ct.limite) problemas.push(`${name}: ${len.toFixed(0)} m con ${ct.nombre} supera su límite de ${ct.limite} m.`);
     const cvc=camConv[ci]&&LEVEL.converters[camConv[ci]];
-    if(cvc && cvc.from!==cams[ci].out)
-      problemas.push(`${name}: el conversor ${cvc.nombre} espera ${cvc.from.toUpperCase()}, pero la cámara saca ${cams[ci].out.toUpperCase()} — sentido equivocado.`);
+    if(cvc && cvc.from!==cams[ci].out) problemas.push(`${name}: el conversor ${cvc.nombre} espera ${cvc.from.toUpperCase()}, pero la cámara saca ${cams[ci].out.toUpperCase()} — sentido equivocado.`);
     const cvi=inConv[c.input]&&LEVEL.converters[inConv[c.input]];
-    if(cvi && cvi.to!==LEVEL.mesa.inFmt)
-      problemas.push(`${name}: el conversor ${cvi.nombre} de la entrada saca ${cvi.to.toUpperCase()}, pero la mesa necesita ${LEVEL.mesa.inFmt.toUpperCase()} — sentido equivocado.`);
-    // encaje de formato del cable (solo si los conversores están bien orientados)
+    if(cvi && cvi.to!==LEVEL.mesa.inFmt) problemas.push(`${name}: el conversor ${cvi.nombre} de la entrada saca ${cvi.to.toUpperCase()}, pero la mesa necesita ${LEVEL.mesa.inFmt.toUpperCase()} — sentido equivocado.`);
     const eo=effOut(ci), ei=effIn(c.input);
     if(eo && ei){
-      if(ct.signal!==eo)      problemas.push(`${name}: la cámara entrega ${eo.toUpperCase()} y el cable es ${ct.signal.toUpperCase()}: no encajan.`);
+      if(ct.signal!==eo) problemas.push(`${name}: la cámara entrega ${eo.toUpperCase()} y el cable es ${ct.signal.toUpperCase()}: no encajan.`);
       else if(ct.signal!==ei) problemas.push(`${name}: el cable ${ct.nombre} (${ct.signal.toUpperCase()}) no entra en la mesa, que espera ${ei.toUpperCase()}.`);
     }
   });
   const t=totals();
   if(t.cost>LEVEL.budget) problemas.push(`Presupuesto: ${t.cost.toFixed(0)} € superan el tope de ${LEVEL.budget} €.`);
 
-  locked=true; redrawCables();                        // ahora sí: marca en rojo los cables que fallan
+  locked=true; redrawCables();
   const ok=problemas.length===0;
   const k=document.getElementById("win-k");
   k.textContent=ok?"INSTALACIÓN VÁLIDA":"REVISA LA INSTALACIÓN";
@@ -600,16 +555,14 @@ function validate(){                                  // "Ya lo tengo": evalúa,
 }
 
 /* ============================================================
-   ARRANQUE
+   INVENTARIO
    ============================================================ */
-function buildInv(){                                  // botones de cable y de conversor en el panel
+function buildInv(){
   const cablesBox=document.getElementById("inv"); cablesBox.innerHTML="";
   Object.entries(LEVEL.cableTypes).forEach(([key,ct])=>{
     const b=document.createElement("button");
     b.className="invbtn"; b.dataset.kind="cable"; b.dataset.key=key;
-    b.innerHTML=`<span><span class="nm">${ct.nombre}</span>`+
-      `<span class="meta">${ct.eurM} €/m${ct.conv?` · ${ct.conv} conv.`:``}</span></span>`+
-      `<span class="dot" style="background:var(${ct.color})"></span>`;
+    b.innerHTML=`<span><span class="nm">${ct.nombre}</span><span class="meta">${ct.eurM} €/m${ct.conv?` · ${ct.conv} conv.`:``}</span></span><span class="dot" style="background:var(${ct.color})"></span>`;
     b.addEventListener("click",()=>{mode="cable";curType=key;refreshInv();});
     cablesBox.appendChild(b);
   });
@@ -617,20 +570,19 @@ function buildInv(){                                  // botones de cable y de c
   Object.entries(LEVEL.converters).forEach(([key,cv])=>{
     const b=document.createElement("button");
     b.className="invbtn"; b.dataset.kind="conv"; b.dataset.key=key;
-    b.innerHTML=`<span><span class="nm">${cv.nombre}</span>`+
-      `<span class="meta">${cv.eur} € · toca cámara o entrada</span></span>`+
-      `<span class="dot" style="background:var(--txt)"></span>`;
+    b.innerHTML=`<span><span class="nm">${cv.nombre}</span><span class="meta">${cv.eur} € · toca cámara o entrada</span></span><span class="dot" style="background:var(--txt)"></span>`;
     b.addEventListener("click",()=>{mode="conv";curConv=key;refreshInv();});
     convBox.appendChild(b);
   });
   const elemBox=document.getElementById("elems"); elemBox.innerHTML="";
   const rb=document.createElement("button");
   rb.className="invbtn"; rb.dataset.kind="ramp"; rb.dataset.key="ramp";
-  rb.innerHTML=`<span><span class="nm">Pasacables</span>`+
-    `<span class="meta">${LEVEL.rampEur} € · toca el público (lo comparten varias cámaras)</span></span>`+
-    `<span class="dot" style="background:var(--amber)"></span>`;
+  rb.innerHTML=`<span><span class="nm">Pasacables</span><span class="meta">${LEVEL.rampEur} € · toca un pasillo (lo comparten varias cámaras)</span></span><span class="dot" style="background:var(--amber)"></span>`;
   rb.addEventListener("click",()=>{mode="ramp";refreshInv();});
   elemBox.appendChild(rb);
+  // ocultar secciones que este nivel no usa
+  document.getElementById("convBlock").style.display = Object.keys(LEVEL.converters).length ? "" : "none";
+  document.getElementById("elemBlock").style.display = (LEVEL.zones||[]).some(z=>zoneBlock(z)==="ramp") ? "" : "none";
   refreshInv();
 }
 function refreshInv(){
@@ -639,33 +591,58 @@ function refreshInv(){
     const on=(kind==="cable"&&mode==="cable"&&key===curType)||(kind==="conv"&&mode==="conv"&&key===curConv)||(kind==="ramp"&&mode==="ramp");
     const c=kind==="cable"?css(LEVEL.cableTypes[key].color):(kind==="ramp"?css("--amber"):css("--txt"));
     b.classList.toggle("on",on);
-    b.style.color=on?c:"";
-    b.style.borderColor=on?c:"";
+    b.style.color=on?c:""; b.style.borderColor=on?c:"";
   });
 }
-function boot(){
-  document.getElementById("nivel").textContent=LEVEL.nombre;
-  document.getElementById("encargo").textContent=LEVEL.encargo;
-  document.getElementById("s-conn").textContent=`0 / ${cams.length}`;
-  buildInv();
-  drawStatic();
-  redrawCables();
-  updateHUD();
+
+/* ============================================================
+   MENÚ + CARGA DE NIVEL
+   ============================================================ */
+function buildMenu(){
+  const box=document.getElementById("venues"); box.innerHTML="";
+  Object.entries(GAME).forEach(([vid,v])=>{
+    const card=document.createElement("div");
+    card.className="venue"+(v.soon?" soon":"");
+    card.innerHTML=`<h3>${v.nombre}</h3><div class="sub">${v.sub||""}</div>`;
+    if(v.soon){ const s=document.createElement("div"); s.className="soonlbl"; s.textContent="Próximamente"; card.appendChild(s); }
+    else v.niveles.forEach((lv,idx)=>{ const b=document.createElement("button"); b.className="lvl"; b.textContent=lv.nombre; b.addEventListener("click",()=>cargarNivel(vid,idx)); card.appendChild(b); });
+    box.appendChild(card);
+  });
 }
-function reset(){
+function cargarNivel(vid,idx){
+  LEVEL=GAME[vid].niveles[idx];
+  S=LEVEL.escalaPxM;
+  VBW=m(LEVEL.planoM.w); VBH=m(LEVEL.planoM.h);
+  svg.setAttribute("viewBox",`0 0 ${VBW} ${VBH}`);
+  inputs=[]; for(let i=0;i<LEVEL.mesa.inputs;i++) inputs.push({x:LEVEL.mesa.x+(i-(LEVEL.mesa.inputs-1)/2)*6, y:LEVEL.mesa.y-4});
+  cams=LEVEL.cams.map(c=>({...c, port:{x:c.x, y:c.y+4}}));
   cables=new Array(cams.length).fill(null);
   camConv=new Array(cams.length).fill(null);
-  inConv=new Array(LEVEL.mesa.inputs).fill(null);
-  ramps.length=0;
-  locked=false;
+  inConv=new Array(inputs.length).fill(null);
+  ramps=[]; curType=Object.keys(LEVEL.cableTypes)[0]; curConv=null; mode="cable"; locked=false;
+  zoom.k=1; zoom.tx=0; zoom.ty=0; applyZoom();
+  document.getElementById("nivel").textContent=LEVEL.nombre;
+  document.getElementById("encargo").textContent=LEVEL.encargo;
+  document.getElementById("win").classList.remove("show");
+  buildInv(); drawStatic(); redrawCables(); updateHUD();
+  document.getElementById("menu").classList.remove("show");
+}
+function reset(){
+  if(!LEVEL)return;
+  cables=new Array(cams.length).fill(null);
+  camConv=new Array(cams.length).fill(null);
+  inConv=new Array(inputs.length).fill(null);
+  ramps.length=0; locked=false;
   document.getElementById("win").classList.remove("show");
   redrawCables(); updateHUD();
 }
+
 document.getElementById("reset").addEventListener("click",reset);
 document.getElementById("win-again").addEventListener("click",reset);
-document.getElementById("validate").addEventListener("click",validate);
+document.getElementById("validate").addEventListener("click",()=>{if(LEVEL)validate();});
 document.getElementById("win-review").addEventListener("click",()=>document.getElementById("win").classList.remove("show"));
-boot();
+document.getElementById("tomenu").addEventListener("click",()=>document.getElementById("menu").classList.add("show"));
+buildMenu();
 </script>
 </body>
 </html>
