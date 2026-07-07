@@ -518,11 +518,16 @@ function redrawCables(){
   // cámaras inalámbricas: enlace RF + receptor RX (con su puerto de salida)
   cams.forEach((cam,ci)=>{
     if(!cam.wireless || !rx[ci]) return;
-    const r=rx[ci], bad=locked && dist(cam,r)>cam.range;
+    const r=rx[ci], d=dist(cam,r), bad=locked && d>cam.range;
     const col=bad?css("--red"):css("--amber");
     el("line",{x1:m(cam.x),y1:m(cam.y),x2:m(r.x),y2:m(r.y),stroke:col,"stroke-width":1.5,"stroke-dasharray":"2 4","pointer-events":"none"},gCables);
-    el("rect",{x:m(r.x)-10,y:m(r.y)-8,width:20,height:16,rx:3,fill:css("--panel"),stroke:col,"stroke-width":1.5,"pointer-events":"none"},gCables);
-    const t=el("text",{x:m(r.x),y:m(r.y)+4,fill:col,"font-size":9,"font-weight":"bold","text-anchor":"middle","pointer-events":"none"},gCables); t.textContent="RX";
+    // distancia RF en metros (etiqueta en el enlace)
+    const mx=(cam.x+r.x)/2, my=(cam.y+r.y)/2;
+    el("rect",{x:m(mx)-28,y:m(my)-12,width:56,height:20,rx:4,fill:css("--bg"),stroke:col,"stroke-width":1,opacity:.92,"pointer-events":"none"},gCables);
+    const dt=el("text",{x:m(mx),y:m(my)+3,fill:col,"font-size":12,"font-weight":"bold","text-anchor":"middle","pointer-events":"none"},gCables); dt.textContent=d.toFixed(0)+" m";
+    // caja RX con su formato de salida (RX·SDI / RX·HDMI)
+    el("rect",{x:m(r.x)-19,y:m(r.y)-9,width:38,height:18,rx:3,fill:css("--panel"),stroke:col,"stroke-width":1.5,"pointer-events":"none"},gCables);
+    const t=el("text",{x:m(r.x),y:m(r.y)+4,fill:col,"font-size":9,"font-weight":"bold","text-anchor":"middle","pointer-events":"none"},gCables); t.textContent="RX·"+cam.rxFmt.toUpperCase();
     el("circle",{cx:m(r.x),cy:m(r.y),r:16,fill:"transparent",style:"cursor:grab","data-cam":ci,class:"outport"},gCables);
   });
 }
