@@ -172,7 +172,7 @@ const TEATRO_N1 = {
     { shape:"rect", kind:"aisle",   x:56, y:33, w:56, h:10, label:"PASILLO CENTRAL" },
     { shape:"rect", kind:"seating", x:56, y:45, w:56, h:14, label:"BUTACAS" },
   ],
-  rampEur: 120, rampW: 12,
+  rampEur: 120, rampW: 6,
   cableTypes: {
     sdi:   { nombre:"HD-SDI", signal:"sdi", limite:100, eurM:3,  conv:0, color:"--cyan"  },
     fibra: { nombre:"Fibra",  signal:"sdi", limite:500, eurM:10, conv:2, color:"--fiber" },
@@ -262,14 +262,14 @@ function drawStatic(){
       el("circle",{cx:m(z.x),cy:m(z.y),r:m(z.r)*0.45,fill:"none",stroke:css("--dim"),"stroke-width":1},gStatic);
       return;
     }
-    let fill="rgba(92,107,103,.12)", stroke=css("--dim"), dash=null;
-    if(z.kind==="stage"){ fill="none"; stroke=css("--cyan"); }
-    else if(zoneBlock(z)==="ramp"){ fill="rgba(255,180,39,.05)"; stroke=css("--amber"); dash="6 6"; }
+    let fill="rgba(92,107,103,.12)", stroke=css("--dim"), dash=null, lbl=css("--dim");
+    if(z.kind==="stage"){ fill="none"; stroke=css("--cyan"); lbl=css("--cyan"); }
+    else if(zoneBlock(z)==="ramp"){ fill="none"; stroke=css("--line"); dash="4 6"; lbl=css("--dim"); }  // pasillo neutro
     const a={x:m(z.x-z.w/2),y:m(z.y-z.h/2),width:m(z.w),height:m(z.h),rx:3,fill:fill,stroke:stroke,"stroke-width":1.4};
     if(dash)a["stroke-dasharray"]=dash;
     el("rect",a,gStatic);
     if(z.label){
-      const t=el("text",{x:m(z.x),y:m(z.y)+3,fill:stroke,"font-size":11,"letter-spacing":"2","text-anchor":"middle"},gStatic);
+      const t=el("text",{x:m(z.x),y:m(z.y)+3,fill:lbl,"font-size":11,"letter-spacing":"2","text-anchor":"middle"},gStatic);
       t.textContent=z.label;
     }
   });
@@ -312,12 +312,13 @@ function drawStatic(){
    ============================================================ */
 function pathPoints(ci){ const c=cables[ci]; return [cams[ci].port, ...c.wps, inputs[c.input]]; }
 function pathLen(ci){ const p=pathPoints(ci); let L=0; for(let i=0;i<p.length-1;i++)L+=dist(p[i],p[i+1]); return L; }
-const inRamp=(x,y)=>ramps.some(r=>Math.abs(x-r.x)<=LEVEL.rampW/2 && Math.abs(y-r.y)<=LEVEL.rampW/2);
-function crossingCoveredByRamp(a,b,z){             // ¿el tramo dentro del pasillo va por un pasacables?
+const aisleAxis=z=> z.w>=z.h ? "x" : "y";          // eje largo del pasillo (el pasacables cruza el corto)
+const inRampAt=(zi,z,x,y)=>{ const c=aisleAxis(z)==="x"?x:y; return ramps.some(r=>r.zi===zi && Math.abs(c-r.along)<=LEVEL.rampW/2); };
+function crossingCoveredByRamp(a,b,z,zi){           // ¿el cruce del pasillo va por un pasacables?
   const x0=z.x-z.w/2,x1=z.x+z.w/2,y0=z.y-z.h/2,y1=z.y+z.h/2, N=24;
   for(let s=0;s<=N;s++){
     const t=s/N, x=a.x+(b.x-a.x)*t, y=a.y+(b.y-a.y)*t;
-    if(x>=x0&&x<=x1&&y>=y0&&y<=y1 && !inRamp(x,y)) return false;
+    if(x>=x0&&x<=x1&&y>=y0&&y<=y1 && !inRampAt(zi,z,x,y)) return false;
   }
   return true;
 }
@@ -328,9 +329,11 @@ function crossHard(ci){
   return false;
 }
 function crossAisleBare(ci){
-  const p=pathPoints(ci);
-  for(let i=0;i<p.length-1;i++) for(const z of (LEVEL.zones||[]))
-    if(zoneBlock(z)==="ramp" && segRect(p[i],p[i+1],z) && !crossingCoveredByRamp(p[i],p[i+1],z)) return true;
+  const p=pathPoints(ci), zs=LEVEL.zones||[];
+  for(let i=0;i<p.length-1;i++) for(let zi=0;zi<zs.length;zi++){
+    const z=zs[zi];
+    if(zoneBlock(z)==="ramp" && segRect(p[i],p[i+1],z) && !crossingCoveredByRamp(p[i],p[i+1],z,zi)) return true;
+  }
   return false;
 }
 function cableCross(ci){ return crossHard(ci)||crossAisleBare(ci); }
@@ -338,7 +341,11 @@ function cableCross(ci){ return crossHard(ci)||crossAisleBare(ci); }
 function redrawCables(){
   gCables.innerHTML="";
   ramps.forEach(r=>{
-    el("rect",{x:m(r.x-LEVEL.rampW/2),y:m(r.y-LEVEL.rampW/2),width:m(LEVEL.rampW),height:m(LEVEL.rampW),rx:3,fill:"rgba(255,180,39,.16)",stroke:css("--amber"),"stroke-width":1.5,"stroke-dasharray":"5 4","pointer-events":"none"},gCables);
+    const z=LEVEL.zones[r.zi]; if(!z)return;
+    let rx,ry,rw,rh;
+    if(aisleAxis(z)==="x"){ rx=r.along-LEVEL.rampW/2; rw=LEVEL.rampW; ry=z.y-z.h/2; rh=z.h; }
+    else { ry=r.along-LEVEL.rampW/2; rh=LEVEL.rampW; rx=z.x-z.w/2; rw=z.w; }
+    el("rect",{x:m(rx),y:m(ry),width:m(rw),height:m(rh),rx:2,fill:"rgba(255,180,39,.22)",stroke:css("--amber"),"stroke-width":1.5,"pointer-events":"none"},gCables);
   });
   cables.forEach((c,ci)=>{
     if(!c)return;
@@ -430,11 +437,13 @@ svg.addEventListener("pointerdown",e=>{
     drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
   }
   if(mode==="ramp"){                                    // colocar/quitar pasacables tocando un pasillo
-    const p=toSvg(e), mx=p.x/S, my=p.y/S;
-    const z=(LEVEL.zones||[]).find(z=>zoneBlock(z)==="ramp" && z.shape!=="circle" && mx>=z.x-z.w/2 && mx<=z.x+z.w/2 && my>=z.y-z.h/2 && my<=z.y+z.h/2);
-    if(z){
-      const hit=ramps.findIndex(r=>Math.abs(mx-r.x)<=LEVEL.rampW/2 && Math.abs(my-r.y)<=LEVEL.rampW/2);
-      if(hit>=0) ramps.splice(hit,1); else ramps.push({x:mx,y:my});
+    const p=toSvg(e), mx=p.x/S, my=p.y/S, zs=LEVEL.zones||[];
+    let zi=-1;
+    for(let k=0;k<zs.length;k++){ const z=zs[k]; if(zoneBlock(z)==="ramp"&&z.shape!=="circle"&&mx>=z.x-z.w/2&&mx<=z.x+z.w/2&&my>=z.y-z.h/2&&my<=z.y+z.h/2){zi=k;break;} }
+    if(zi>=0){
+      const z=zs[zi], along=aisleAxis(z)==="x"?mx:my;
+      const hit=ramps.findIndex(r=>r.zi===zi && Math.abs(r.along-along)<=LEVEL.rampW/2);
+      if(hit>=0) ramps.splice(hit,1); else ramps.push({zi,along});
       redrawCables(); updateHUD(); return;
     }
     drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
