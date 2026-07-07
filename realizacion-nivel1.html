@@ -83,7 +83,7 @@
 
     <div class="block">
       <h2>Cómo se juega</h2>
-      <p class="hint">Arrastra desde el <b style="color:var(--txt)">objetivo</b> de cada cámara hasta una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo: cada quiebre suma metros. Toca un quiebre para quitarlo; vuelve a arrastrar desde la cámara para recablear.</p>
+      <p class="hint">Arrastra desde el <b style="color:var(--txt)">objetivo</b> de cada cámara hasta una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo: cada quiebre suma metros. El cable <b style="color:var(--txt)">no puede cruzar</b> columnas ni el público: rodéalos. Toca un quiebre para quitarlo.</p>
     </div>
 
     <button id="reset">Reiniciar plano</button>
@@ -118,6 +118,12 @@ const LEVEL = {
     { id:"CAM 1", x:60,  y:44 },
     { id:"CAM 2", x:18,  y:24 },
     { id:"CAM 3", x:102, y:20 },
+  ],
+  // obstáculos: el cable no puede cruzarlos (hay que rodearlos con quiebres)
+  obstacles: [
+    { shape:"rect",   x:60, y:64, w:34, h:14, label:"PÚBLICO" },
+    { shape:"circle", x:34, y:52, r:4 },
+    { shape:"circle", x:88, y:45, r:4 },
   ]
 };
 
@@ -126,6 +132,29 @@ const svg=document.getElementById("plano");
 const S=LEVEL.escalaPxM;
 const m=v=>v*S;                                   // metros → px de dibujo
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);    // distancia en METROS (coords ya son metros)
+
+/* --- geometría de obstáculos (todo en metros) --- */
+function segCircle(a,b,c,r){                       // ¿el segmento a-b toca el círculo c,r?
+  const dx=b.x-a.x, dy=b.y-a.y, l2=dx*dx+dy*dy||1e-9;
+  let t=((c.x-a.x)*dx+(c.y-a.y)*dy)/l2; t=Math.max(0,Math.min(1,t));
+  return Math.hypot(a.x+t*dx-c.x, a.y+t*dy-c.y)<=r;
+}
+function segRect(a,b,o){                           // ¿el segmento a-b toca el rectángulo (centro x,y; w,h)?
+  const x0=o.x-o.w/2,x1=o.x+o.w/2,y0=o.y-o.h/2,y1=o.y+o.h/2;
+  const inside=p=>p.x>=x0&&p.x<=x1&&p.y>=y0&&p.y<=y1;
+  if(inside(a)||inside(b))return true;
+  const ss=(p,q,r,s)=>{                            // ¿se cruzan los segmentos p-q y r-s?
+    const d=(q.x-p.x)*(s.y-r.y)-(q.y-p.y)*(s.x-r.x); if(!d)return false;
+    const t=((r.x-p.x)*(s.y-r.y)-(r.y-p.y)*(s.x-r.x))/d;
+    const u=((r.x-p.x)*(q.y-p.y)-(r.y-p.y)*(q.x-p.x))/d;
+    return t>=0&&t<=1&&u>=0&&u<=1;
+  };
+  const c=[{x:x0,y:y0},{x:x1,y:y0},{x:x1,y:y1},{x:x0,y:y1}];
+  return ss(a,b,c[0],c[1])||ss(a,b,c[1],c[2])||ss(a,b,c[2],c[3])||ss(a,b,c[3],c[0]);
+}
+function hitsObstacle(a,b){
+  return (LEVEL.obstacles||[]).some(o=> o.shape==="circle" ? segCircle(a,b,o,o.r) : segRect(a,b,o));
+}
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
 svg.setAttribute("viewBox",`0 0 ${m(LEVEL.planoM.w)} ${m(LEVEL.planoM.h)}`);
@@ -171,6 +200,17 @@ function drawStatic(){
   const st=el("text",{x:m(60),y:m(11),fill:css("--dim"),"font-size":13,"letter-spacing":"4","text-anchor":"middle"},gStatic);
   st.textContent="E S C E N A R I O";
 
+  // obstáculos (el cable debe rodearlos)
+  (LEVEL.obstacles||[]).forEach(o=>{
+    if(o.shape==="circle"){
+      el("circle",{cx:m(o.x),cy:m(o.y),r:m(o.r),fill:css("--line"),stroke:css("--dim"),"stroke-width":1.5},gStatic);
+      el("circle",{cx:m(o.x),cy:m(o.y),r:m(o.r)*0.45,fill:"none",stroke:css("--dim"),"stroke-width":1},gStatic);
+    }else{
+      el("rect",{x:m(o.x-o.w/2),y:m(o.y-o.h/2),width:m(o.w),height:m(o.h),fill:"rgba(92,107,103,.10)",stroke:css("--dim"),"stroke-width":1.2,"stroke-dasharray":"6 5",rx:2},gStatic);
+      if(o.label){const t=el("text",{x:m(o.x),y:m(o.y)+4,fill:css("--dim"),"font-size":12,"letter-spacing":"3","text-anchor":"middle"},gStatic);t.textContent=o.label;}
+    }
+  });
+
   // barra de escala (20 m)
   const bx=m(6), by=m(LEVEL.planoM.h-5);
   el("line",{x1:bx,y1:by,x2:bx+m(20),y2:by,stroke:css("--dim"),"stroke-width":2},gStatic);
@@ -205,11 +245,6 @@ function drawStatic(){
 /* ============================================================
    CABLES + VALIDACIÓN
    ============================================================ */
-function colorFor(len){
-  if(len>LEVEL.limiteSDI) return css("--red");
-  if(len>LEVEL.avisoM)    return css("--amber");
-  return css("--cyan");
-}
 function pathPoints(ci){                              // recorrido completo (metros)
   const c=cables[ci];
   return [cams[ci].port, ...c.wps, inputs[c.input]];
@@ -219,11 +254,17 @@ function pathLen(ci){                                 // longitud sumando segmen
   for(let i=0;i<p.length-1;i++)L+=dist(p[i],p[i+1]);
   return L;
 }
+function cableCross(ci){                              // ¿algún segmento cruza un obstáculo?
+  const p=pathPoints(ci);
+  for(let i=0;i<p.length-1;i++) if(hitsObstacle(p[i],p[i+1])) return true;
+  return false;
+}
 function redrawCables(){
   gCables.innerHTML="";
   cables.forEach((c,ci)=>{
     if(!c)return;
-    const p=pathPoints(ci), len=pathLen(ci), col=colorFor(len);
+    const p=pathPoints(ci), len=pathLen(ci), cross=cableCross(ci);
+    const col=(cross||len>LEVEL.limiteSDI)?css("--red"):(len>LEVEL.avisoM?css("--amber"):css("--cyan"));
     // segmentos: visible + hit invisible (con índice para insertar quiebre)
     for(let i=0;i<p.length-1;i++){
       const a=p[i], b=p[i+1];
@@ -317,7 +358,7 @@ function totals(){
     conn++;
     const len=pathLen(ci);
     total+=len;
-    if(len>LEVEL.limiteSDI)allOk=false;
+    if(len>LEVEL.limiteSDI||cableCross(ci))allOk=false;
   });
   return {conn,total,allOk};
 }
