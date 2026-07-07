@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Puzzle de Realización · Nivel 1 — CIFP Tartanga</title>
+<title>Puzzle de Realización — CIFP Tartanga</title>
 <style>
   :root{
     --bg:#0a0e0d; --panel:#0f1513; --line:#1c2926;
     --amber:#ffb427; --cyan:#3fe0d0; --dim:#5c6b67; --txt:#e8f0ee;
-    --red:#ff5a5a; --grid:rgba(63,224,208,.06);
+    --red:#ff5a5a; --fiber:#b18cff; --grid:rgba(63,224,208,.06);
     --mono:'SF Mono',ui-monospace,'Roboto Mono',Menlo,Consolas,monospace;
   }
   *{margin:0;padding:0;box-sizing:border-box}
@@ -29,6 +29,12 @@
   .legend{font-size:10.5px;line-height:1.9;color:var(--dim)}
   .legend .chip{display:inline-block;width:22px;height:3px;vertical-align:middle;margin-right:8px;border-radius:2px}
   .hint{font-size:11px;line-height:1.6;color:var(--dim)}
+  .inv{display:flex;flex-direction:column;gap:8px}
+  .invbtn{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;background:transparent;border:1px solid var(--line);color:var(--dim);padding:10px 12px;font-family:var(--mono);text-align:left;transition:.15s}
+  .invbtn.on{background:#0c1614}
+  .invbtn .nm{font-size:12.5px;letter-spacing:.04em;display:block}
+  .invbtn .meta{font-size:9.5px;letter-spacing:.03em;opacity:.8;display:block;margin-top:3px}
+  .invbtn .dot{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
   button{font-family:var(--mono);cursor:pointer}
   #reset{margin-top:auto;background:transparent;color:var(--dim);border:1px solid var(--line);padding:11px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:.18s}
   #reset:active{background:var(--line);color:var(--txt)}
@@ -66,24 +72,22 @@
     <p class="encargo" id="encargo"></p>
 
     <div class="block">
-      <h2>Estado</h2>
-      <div class="stat"><span class="lbl">Cámaras conectadas</span><span class="val" id="s-conn">0 / 0</span></div>
-      <div class="stat"><span class="lbl">Metraje total</span><span class="val" id="s-total">0 m</span></div>
-      <div class="stat"><span class="lbl">Límite HD-SDI</span><span class="val" id="s-lim">100 m</span></div>
+      <h2>Inventario · tipo de cable</h2>
+      <div class="inv" id="inv"></div>
+      <div class="stat" style="margin-top:12px"><span class="lbl">Conversor (fibra)</span><span class="val" id="s-convprice">—</span></div>
     </div>
 
     <div class="block">
-      <h2>Cable SDI · longitud</h2>
-      <div class="legend">
-        <div><span class="chip" style="background:var(--cyan)"></span>Holgado</div>
-        <div><span class="chip" style="background:var(--amber)"></span>Cerca del límite</div>
-        <div><span class="chip" style="background:var(--red)"></span>Fuera de rango</div>
-      </div>
+      <h2>Estado</h2>
+      <div class="stat"><span class="lbl">Cámaras conectadas</span><span class="val" id="s-conn">0 / 0</span></div>
+      <div class="stat"><span class="lbl">Metraje total</span><span class="val" id="s-total">0 m</span></div>
+      <div class="stat"><span class="lbl">Conversores</span><span class="val" id="s-conv">0</span></div>
+      <div class="stat"><span class="lbl">Presupuesto</span><span class="val" id="s-budget">—</span></div>
     </div>
 
     <div class="block">
       <h2>Cómo se juega</h2>
-      <p class="hint">Arrastra desde el <b style="color:var(--txt)">objetivo</b> de cada cámara hasta una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo: cada quiebre suma metros. El cable <b style="color:var(--txt)">no puede cruzar</b> columnas ni el público: rodéalos. Toca un quiebre para quitarlo. <b style="color:var(--txt)">Pellizca con dos dedos</b> para acercar; arrastra el fondo para moverte.</p>
+      <p class="hint"><b style="color:var(--txt)">Elige el tipo de cable</b> arriba y arrastra desde el <b style="color:var(--txt)">objetivo</b> de la cámara a una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo (suma metros); no puede cruzar columnas ni público. Toca un quiebre para quitarlo. La <b style="color:var(--txt)">fibra</b> llega lejos pero gasta 2 conversores y cuesta más. No te pases del <b style="color:var(--txt)">presupuesto</b>. Pellizca para acercar.</p>
     </div>
 
     <button id="reset">Reiniciar plano</button>
@@ -107,24 +111,30 @@
    El alumno solo enruta; las posiciones son fijas en N1.
    ============================================================ */
 const LEVEL = {
-  nombre:  "Nivel 1 · Concierto en sala",
-  encargo: "Lleva la señal de las 3 cámaras SDI hasta la mesa de realización. Vigila la longitud: el HD-SDI aguanta hasta 100 m.",
-  planoM:  { w:120, h:90 },   // dimensiones reales del recinto (metros)
-  escalaPxM: 9,               // ESCALA DEL PLANO: px por metro. Solo afecta al DIBUJO, no a la física.
-  limiteSDI: 100,             // m — límite HD-SDI
-  avisoM:    70,              // m — a partir de aquí, aviso ámbar
-  mesa: { x:60, y:83, inputs:3 },
+  nombre:  "Nivel 2 · Sala grande",
+  encargo: "Lleva las 4 cámaras a la mesa dentro del presupuesto. El HD-SDI es barato pero solo aguanta 100 m: la cámara lejana necesitará fibra, que llega lejos pero gasta 2 conversores y cuesta más por metro. Usa la fibra solo donde haga falta.",
+  planoM:  { w:160, h:110 },  // dimensiones reales del recinto (metros)
+  escalaPxM: 7,               // ESCALA DEL PLANO: px por metro. Solo afecta al DIBUJO, no a la física.
+  mesa: { x:80, y:100, inputs:4 },
   cams: [
-    { id:"CAM 1", x:60,  y:44 },
-    { id:"CAM 2", x:18,  y:24 },
-    { id:"CAM 3", x:102, y:20 },
+    { id:"CAM 1", x:80,  y:60 },
+    { id:"CAM 2", x:24,  y:34 },
+    { id:"CAM 3", x:136, y:30 },
+    { id:"CAM 4", x:155, y:8  },   // lejana → fuera de rango SDI, obliga a fibra
   ],
   // obstáculos: el cable no puede cruzarlos (hay que rodearlos con quiebres)
   obstacles: [
-    { shape:"rect",   x:60, y:64, w:34, h:14, label:"PÚBLICO" },
-    { shape:"circle", x:34, y:52, r:4 },
-    { shape:"circle", x:88, y:45, r:4 },
-  ]
+    { shape:"rect",   x:80,  y:76, w:44, h:16, label:"PÚBLICO" },
+    { shape:"circle", x:44,  y:60, r:5 },
+    { shape:"circle", x:118, y:55, r:5 },
+  ],
+  // tipos de cable disponibles en el inventario
+  cableTypes: {
+    sdi:   { nombre:"HD-SDI", limite:100, eurM:3,  conv:0, color:"--cyan"  },
+    fibra: { nombre:"Fibra",  limite:500, eurM:10, conv:2, color:"--fiber" },
+  },
+  convEur: 250,      // € por conversor (la fibra usa 2 por tirada)
+  budget:  2700,     // tope de presupuesto (€)
 };
 
 const SVGNS="http://www.w3.org/2000/svg";
@@ -175,8 +185,10 @@ for(let i=0;i<LEVEL.mesa.inputs;i++){
 /* --- objetivo (salida SDI) de cada cámara, en metros --- */
 const cams=LEVEL.cams.map(c=>({...c, port:{x:c.x, y:c.y+4}}));
 
-/* --- estado: cables[camIdx] = { input, wps:[{x,y}...] } | null (wps=quiebres, en metros) --- */
+/* --- estado: cables[camIdx] = { input, type, wps:[{x,y}...] } | null (wps=quiebres, en metros) --- */
 let cables=new Array(cams.length).fill(null);
+let curType=Object.keys(LEVEL.cableTypes)[0];     // tipo de cable seleccionado en el inventario
+const ctOf=ci=>LEVEL.cableTypes[cables[ci].type]; // tipo del cable de la cámara ci
 
 /* ============================================================
    DIBUJO ESTÁTICO (rejilla, escenario, mesa, cámaras)
@@ -264,13 +276,22 @@ function redrawCables(){
   gCables.innerHTML="";
   cables.forEach((c,ci)=>{
     if(!c)return;
-    const p=pathPoints(ci), len=pathLen(ci), cross=cableCross(ci);
-    const col=(cross||len>LEVEL.limiteSDI)?css("--red"):(len>LEVEL.avisoM?css("--amber"):css("--cyan"));
+    const p=pathPoints(ci), len=pathLen(ci), ct=ctOf(ci);
+    const invalid=cableCross(ci)||len>ct.limite;
+    const col=invalid?css("--red"):css(ct.color);
     // segmentos: visible + hit invisible (con índice para insertar quiebre)
     for(let i=0;i<p.length-1;i++){
       const a=p[i], b=p[i+1];
       el("line",{x1:m(a.x),y1:m(a.y),x2:m(b.x),y2:m(b.y),stroke:col,"stroke-width":3.5},gCables);
       el("line",{x1:m(a.x),y1:m(a.y),x2:m(b.x),y2:m(b.y),stroke:"transparent","stroke-width":22,"data-cam":ci,"data-seg":i,class:"seg",style:"cursor:crosshair"},gCables);
+    }
+    // conversores en los extremos (solo cables que los requieren, p.ej. fibra)
+    if(ct.conv>0){
+      [p[0],p[p.length-1]].forEach(q=>{
+        el("rect",{x:m(q.x)-9,y:m(q.y)-9,width:18,height:18,rx:3,fill:css("--panel"),stroke:col,"stroke-width":2},gCables);
+        const ct2=el("text",{x:m(q.x),y:m(q.y)+4,fill:col,"font-size":11,"font-weight":"bold","text-anchor":"middle"},gCables);
+        ct2.textContent="C";
+      });
     }
     // manijas de quiebre (arrastrar para mover, tocar para quitar)
     c.wps.forEach((w,wi)=>{
@@ -336,7 +357,7 @@ svg.addEventListener("pointerdown",e=>{
     const ci=+t.dataset.cam;
     if(cables[ci]){cables[ci]=null;redrawCables();updateHUD();}
     const p=cams[ci].port;
-    drag={kind:"new",ci,line:el("line",{x1:m(p.x),y1:m(p.y),x2:m(p.x),y2:m(p.y),stroke:css("--cyan"),"stroke-width":3,"stroke-dasharray":"6 5",opacity:.8},gTemp)};
+    drag={kind:"new",ci,line:el("line",{x1:m(p.x),y1:m(p.y),x2:m(p.x),y2:m(p.y),stroke:css(LEVEL.cableTypes[curType].color),"stroke-width":3,"stroke-dasharray":"6 5",opacity:.8},gTemp)};
   }else if(t.classList.contains("wp")){                 // mover/quitar quiebre
     drag={kind:"wp",ci:+t.dataset.cam,wp:+t.dataset.wp,moved:false,sx:e.clientX,sy:e.clientY};
   }else if(t.classList.contains("seg")){                // agarrar segmento → nace quiebre
@@ -382,7 +403,7 @@ function endPointer(e){
       const d=Math.hypot(p.x-m(ip.x),p.y-m(ip.y));
       if(d<bd){bd=d;best=i;}
     });
-    if(best>=0 && bd<m(4)) cables[drag.ci]={input:best,wps:[]};
+    if(best>=0 && bd<m(4)) cables[drag.ci]={input:best,type:curType,wps:[]};
     gTemp.innerHTML="";
   }else if(drag.kind==="wp" && !drag.moved){            // toque sin mover → quitar quiebre
     cables[drag.ci].wps.splice(drag.wp,1);
@@ -404,26 +425,34 @@ svg.addEventListener("wheel",e=>{
    HUD + VICTORIA
    ============================================================ */
 function totals(){
-  let conn=0,total=0,allOk=true;
+  let conn=0,total=0,convs=0,cost=0,allOk=true;
   cables.forEach((c,ci)=>{
     if(!c){allOk=false;return;}
     conn++;
-    const len=pathLen(ci);
-    total+=len;
-    if(len>LEVEL.limiteSDI||cableCross(ci))allOk=false;
+    const ct=LEVEL.cableTypes[c.type], len=pathLen(ci);
+    total+=len; convs+=ct.conv; cost+=len*ct.eurM+ct.conv*LEVEL.convEur;
+    if(len>ct.limite||cableCross(ci))allOk=false;
   });
-  return {conn,total,allOk};
+  const within=cost<=LEVEL.budget;
+  return {conn,total,convs,cost,allOk,within};
 }
 function updateHUD(){
-  const {conn,total}=totals();
-  document.getElementById("s-conn").textContent=`${conn} / ${cams.length}`;
-  document.getElementById("s-total").textContent=`${total.toFixed(0)} m`;
+  const t=totals();
+  document.getElementById("s-conn").textContent=`${t.conn} / ${cams.length}`;
+  document.getElementById("s-total").textContent=`${t.total.toFixed(0)} m`;
+  document.getElementById("s-conv").textContent=`${t.convs}`;
+  const b=document.getElementById("s-budget");
+  b.textContent=`${t.cost.toFixed(0)} / ${LEVEL.budget} €`;
+  b.className="val "+(t.cost>LEVEL.budget?"bad":(t.conn===cams.length?"ok":""));
 }
 function checkWin(){
-  const {conn,total,allOk}=totals();
-  if(conn===cams.length && allOk){
+  const t=totals();
+  if(t.conn===cams.length && t.allOk && t.within){
+    const sobra=LEVEL.budget-t.cost;
     document.getElementById("win-txt").innerHTML=
-      `Las 3 cámaras entregan señal en la mesa dentro del límite HD-SDI.<br>Metraje total de cable: <b>${total.toFixed(0)} m</b>.`;
+      `Las ${cams.length} cámaras entregan señal dentro de presupuesto.<br>`+
+      `Coste: <b>${t.cost.toFixed(0)} €</b> · ${t.total.toFixed(0)} m · ${t.convs} conversores.<br>`+
+      `Te sobran <b>${sobra.toFixed(0)} €</b> → puntuación.`;
     document.getElementById("win").classList.add("show");
   }
 }
@@ -431,11 +460,33 @@ function checkWin(){
 /* ============================================================
    ARRANQUE
    ============================================================ */
+function buildInv(){                                  // botones de tipo de cable en el panel
+  const box=document.getElementById("inv"); box.innerHTML="";
+  Object.entries(LEVEL.cableTypes).forEach(([key,ct])=>{
+    const b=document.createElement("button");
+    b.className="invbtn"; b.dataset.type=key;
+    b.innerHTML=`<span><span class="nm">${ct.nombre}</span>`+
+      `<span class="meta">≤ ${ct.limite} m · ${ct.eurM} €/m${ct.conv?` · ${ct.conv} conv.`:``}</span></span>`+
+      `<span class="dot" style="background:var(${ct.color})"></span>`;
+    b.addEventListener("click",()=>{curType=key;refreshInv();});
+    box.appendChild(b);
+  });
+  refreshInv();
+}
+function refreshInv(){
+  document.querySelectorAll(".invbtn").forEach(b=>{
+    const on=b.dataset.type===curType, ct=LEVEL.cableTypes[b.dataset.type];
+    b.classList.toggle("on",on);
+    b.style.color=on?css(ct.color):"";
+    b.style.borderColor=on?css(ct.color):"";
+  });
+}
 function boot(){
   document.getElementById("nivel").textContent=LEVEL.nombre;
   document.getElementById("encargo").textContent=LEVEL.encargo;
   document.getElementById("s-conn").textContent=`0 / ${cams.length}`;
-  document.getElementById("s-lim").textContent=`${LEVEL.limiteSDI} m`;
+  document.getElementById("s-convprice").textContent=`${LEVEL.convEur} € × 2`;
+  buildInv();
   drawStatic();
   redrawCables();
   updateHUD();
