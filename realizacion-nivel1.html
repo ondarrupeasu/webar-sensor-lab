@@ -89,16 +89,22 @@
     </div>
 
     <div class="block">
+      <h2>Elementos</h2>
+      <div class="inv" id="elems"></div>
+    </div>
+
+    <div class="block">
       <h2>Estado</h2>
       <div class="stat"><span class="lbl">Cámaras conectadas</span><span class="val" id="s-conn">0 / 0</span></div>
       <div class="stat"><span class="lbl">Metraje total</span><span class="val" id="s-total">0 m</span></div>
       <div class="stat"><span class="lbl">Conversores</span><span class="val" id="s-conv">0</span></div>
+      <div class="stat"><span class="lbl">Pasacables</span><span class="val" id="s-ramps">0</span></div>
       <div class="stat"><span class="lbl">Presupuesto</span><span class="val" id="s-budget">—</span></div>
     </div>
 
     <div class="block">
       <h2>Cómo se juega</h2>
-      <p class="hint"><b style="color:var(--txt)">Elige el tipo de cable</b> arriba y arrastra desde el <b style="color:var(--txt)">objetivo</b> de la cámara a una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo (suma metros); no puede cruzar columnas ni público. Toca un quiebre para quitarlo. Cada cámara tiene su <b style="color:var(--txt)">salida</b> (SDI/HDMI/IP) y la mesa solo acepta SDI: elige un <b style="color:var(--txt)">conversor</b> y toca una cámara o una entrada para colocarlo. La fibra llega lejos; el HDMI es corto; el IP va por Ethernet. Hay conversores de sobra: fíjate en el <b style="color:var(--txt)">sentido</b> (HDMI→SDI no es lo mismo que SDI→HDMI). El juego <b style="color:var(--txt)">no te avisa</b> si algo no encaja: debes saberlo. No te pases del <b style="color:var(--txt)">presupuesto</b>. Cuando lo tengas todo, pulsa <b style="color:var(--txt)">Ya lo tengo</b> para validar. Pellizca para acercar.</p>
+      <p class="hint"><b style="color:var(--txt)">Elige el tipo de cable</b> arriba y arrastra desde el <b style="color:var(--txt)">objetivo</b> de la cámara a una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo (suma metros); no puede cruzar columnas, y el público solo se cruza con un <b style="color:var(--txt)">pasacables</b> (que comparten varias cámaras). Toca un quiebre para quitarlo. Cada cámara tiene su <b style="color:var(--txt)">salida</b> (SDI/HDMI/IP) y la mesa solo acepta SDI: elige un <b style="color:var(--txt)">conversor</b> y toca una cámara o una entrada para colocarlo. La fibra llega lejos; el HDMI es corto; el IP va por Ethernet. Hay conversores de sobra: fíjate en el <b style="color:var(--txt)">sentido</b> (HDMI→SDI no es lo mismo que SDI→HDMI). El juego <b style="color:var(--txt)">no te avisa</b> si algo no encaja: debes saberlo. No te pases del <b style="color:var(--txt)">presupuesto</b>. Cuando lo tengas todo, pulsa <b style="color:var(--txt)">Ya lo tengo</b> para validar. Pellizca para acercar.</p>
     </div>
 
     <button id="validate">Ya lo tengo · Validar</button>
@@ -139,10 +145,12 @@ const LEVEL = {
   ],
   // obstáculos: el cable no puede cruzarlos (hay que rodearlos con quiebres)
   obstacles: [
-    { shape:"rect",   x:80,  y:76, w:44, h:16, label:"PÚBLICO" },
+    { shape:"rect",   x:80,  y:76, w:44, h:16, label:"PÚBLICO", pass:"ramp" },  // cruzable SOLO con pasacables
     { shape:"circle", x:44,  y:60, r:5 },
     { shape:"circle", x:118, y:55, r:5 },
   ],
+  rampEur: 120,      // € por pasacables (coste ÚNICO: lo comparten todas las cámaras que pasen por él)
+  rampW:   10,       // ancho del pasacables (m)
   // tipos de cable disponibles en el inventario (signal = formato que transportan)
   cableTypes: {
     sdi:   { nombre:"HD-SDI",   signal:"sdi",  limite:100, eurM:3,   conv:0, color:"--cyan"  },
@@ -219,6 +227,7 @@ let locked=false;                                 // true tras validar: bloquea 
 let curConv=null, mode="cable";                   // conversor seleccionado / modo del inventario ("cable"|"conv")
 let camConv=new Array(LEVEL.cams.length).fill(null);   // conversor en la salida de cada cámara
 let inConv=new Array(LEVEL.mesa.inputs).fill(null);    // conversor en cada entrada de la mesa
+let ramps=[];                                          // pasacables sobre el público: {cx,w} (comparten coste)
 function effOut(ci){                               // formato efectivo de salida de la cámara
   const k=camConv[ci]; if(!k) return cams[ci].out;
   const cv=LEVEL.converters[k];
@@ -307,13 +316,35 @@ function pathLen(ci){                                 // longitud sumando segmen
   for(let i=0;i<p.length-1;i++)L+=dist(p[i],p[i+1]);
   return L;
 }
-function cableCross(ci){                              // ¿algún segmento cruza un obstáculo?
+function crossingCoveredByRamp(a,b,o){               // ¿el tramo dentro del público va por un pasacables?
+  const x0=o.x-o.w/2,x1=o.x+o.w/2,y0=o.y-o.h/2,y1=o.y+o.h/2, N=24;
+  for(let s=0;s<=N;s++){
+    const t=s/N, x=a.x+(b.x-a.x)*t, y=a.y+(b.y-a.y)*t;
+    if(x>=x0&&x<=x1&&y>=y0&&y<=y1 && !ramps.some(r=>x>=r.cx-r.w/2&&x<=r.cx+r.w/2)) return false;
+  }
+  return true;
+}
+function crossHard(ci){                               // cruza columna u obstáculo duro (siempre prohibido)
   const p=pathPoints(ci);
-  for(let i=0;i<p.length-1;i++) if(hitsObstacle(p[i],p[i+1])) return true;
+  for(let i=0;i<p.length-1;i++) for(const o of (LEVEL.obstacles||[]))
+    if(o.pass!=="ramp" && (o.shape==="circle"?segCircle(p[i],p[i+1],o,o.r):segRect(p[i],p[i+1],o))) return true;
   return false;
 }
+function crossPublicoBare(ci){                        // cruza el público sin pasacables
+  const p=pathPoints(ci);
+  for(let i=0;i<p.length-1;i++) for(const o of (LEVEL.obstacles||[]))
+    if(o.pass==="ramp" && segRect(p[i],p[i+1],o) && !crossingCoveredByRamp(p[i],p[i+1],o)) return true;
+  return false;
+}
+function cableCross(ci){ return crossHard(ci)||crossPublicoBare(ci); }
 function redrawCables(){
   gCables.innerHTML="";
+  // pasacables (bandas sobre el público; bajo los cables)
+  const pubRamp=LEVEL.obstacles.find(o=>o.pass==="ramp");
+  if(pubRamp) ramps.forEach(r=>{
+    el("rect",{x:m(r.cx-r.w/2),y:m(pubRamp.y-pubRamp.h/2),width:m(r.w),height:m(pubRamp.h),fill:"rgba(255,180,39,.14)",stroke:css("--amber"),"stroke-width":1.5,"stroke-dasharray":"5 4","pointer-events":"none"},gCables);
+    const t=el("text",{x:m(r.cx),y:m(pubRamp.y)+3,fill:css("--amber"),"font-size":8,"letter-spacing":"0.5","text-anchor":"middle","pointer-events":"none"},gCables); t.textContent="PASACABLES";
+  });
   cables.forEach((c,ci)=>{
     if(!c)return;
     const p=pathPoints(ci), len=pathLen(ci), ct=ctOf(ci);
@@ -420,6 +451,15 @@ svg.addEventListener("pointerdown",e=>{
     }
     drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
   }
+  if(mode==="ramp"){                                    // colocar/quitar pasacables tocando el público
+    const p=toSvg(e), mx=p.x/S, my=p.y/S, pub=LEVEL.obstacles.find(o=>o.pass==="ramp");
+    if(pub && mx>=pub.x-pub.w/2 && mx<=pub.x+pub.w/2 && my>=pub.y-pub.h/2 && my<=pub.y+pub.h/2){
+      const hit=ramps.findIndex(r=>mx>=r.cx-r.w/2&&mx<=r.cx+r.w/2);
+      if(hit>=0) ramps.splice(hit,1); else ramps.push({cx:mx,w:LEVEL.rampW});
+      redrawCables(); updateHUD(); return;
+    }
+    drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
+  }
   if(t.classList.contains("outport")){                  // nuevo cable
     const ci=+t.dataset.cam;
     if(cables[ci]){cables[ci]=null;redrawCables();updateHUD();}
@@ -503,14 +543,16 @@ function totals(){
   });
   camConv.forEach(k=>{if(k){convs++;cost+=LEVEL.converters[k].eur;}});
   inConv.forEach(k=>{if(k){convs++;cost+=LEVEL.converters[k].eur;}});
+  cost+=ramps.length*LEVEL.rampEur;                  // pasacables: coste por unidad (compartido)
   const within=cost<=LEVEL.budget;
-  return {conn,total,convs,cost,allOk,within};
+  return {conn,total,convs,cost,allOk,within,ramps:ramps.length};
 }
 function updateHUD(){
   const t=totals();
   document.getElementById("s-conn").textContent=`${t.conn} / ${cams.length}`;
   document.getElementById("s-total").textContent=`${t.total.toFixed(0)} m`;
   document.getElementById("s-conv").textContent=`${t.convs}`;
+  document.getElementById("s-ramps").textContent=`${t.ramps}`;
   document.getElementById("s-budget").textContent=`${t.cost.toFixed(0)} / ${LEVEL.budget} €`;  // neutro: no revela si te pasas
 }
 function validate(){                                  // "Ya lo tengo": evalúa, explica y bloquea
@@ -519,7 +561,8 @@ function validate(){                                  // "Ya lo tengo": evalúa,
     const name=cams[ci].id;
     if(!c){ problemas.push(`${name}: sin conectar a la mesa.`); return; }
     const ct=LEVEL.cableTypes[c.type], len=pathLen(ci);
-    if(cableCross(ci)) problemas.push(`${name}: el cable cruza un obstáculo (columna o público).`);
+    if(crossHard(ci)) problemas.push(`${name}: el cable cruza una columna u obstáculo.`);
+    if(crossPublicoBare(ci)) problemas.push(`${name}: el cable cruza el público sin pasacables (cable pisable).`);
     if(len>ct.limite)  problemas.push(`${name}: ${len.toFixed(0)} m con ${ct.nombre} supera su límite de ${ct.limite} m.`);
     // conversores en sentido equivocado (el error típico: SDI→HDMI en vez de HDMI→SDI)
     const cvc=camConv[ci]&&LEVEL.converters[camConv[ci]];
@@ -580,13 +623,21 @@ function buildInv(){                                  // botones de cable y de c
     b.addEventListener("click",()=>{mode="conv";curConv=key;refreshInv();});
     convBox.appendChild(b);
   });
+  const elemBox=document.getElementById("elems"); elemBox.innerHTML="";
+  const rb=document.createElement("button");
+  rb.className="invbtn"; rb.dataset.kind="ramp"; rb.dataset.key="ramp";
+  rb.innerHTML=`<span><span class="nm">Pasacables</span>`+
+    `<span class="meta">${LEVEL.rampEur} € · toca el público (lo comparten varias cámaras)</span></span>`+
+    `<span class="dot" style="background:var(--amber)"></span>`;
+  rb.addEventListener("click",()=>{mode="ramp";refreshInv();});
+  elemBox.appendChild(rb);
   refreshInv();
 }
 function refreshInv(){
   document.querySelectorAll(".invbtn").forEach(b=>{
     const kind=b.dataset.kind, key=b.dataset.key;
-    const on=(kind==="cable"&&mode==="cable"&&key===curType)||(kind==="conv"&&mode==="conv"&&key===curConv);
-    const c=kind==="cable"?css(LEVEL.cableTypes[key].color):css("--txt");
+    const on=(kind==="cable"&&mode==="cable"&&key===curType)||(kind==="conv"&&mode==="conv"&&key===curConv)||(kind==="ramp"&&mode==="ramp");
+    const c=kind==="cable"?css(LEVEL.cableTypes[key].color):(kind==="ramp"?css("--amber"):css("--txt"));
     b.classList.toggle("on",on);
     b.style.color=on?c:"";
     b.style.borderColor=on?c:"";
@@ -605,6 +656,7 @@ function reset(){
   cables=new Array(cams.length).fill(null);
   camConv=new Array(cams.length).fill(null);
   inConv=new Array(LEVEL.mesa.inputs).fill(null);
+  ramps.length=0;
   locked=false;
   document.getElementById("win").classList.remove("show");
   redrawCables(); updateHUD();
