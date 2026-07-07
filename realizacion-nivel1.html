@@ -83,7 +83,7 @@
 
     <div class="block">
       <h2>Cómo se juega</h2>
-      <p class="hint">Arrastra desde el <b style="color:var(--txt)">objetivo</b> de cada cámara hasta una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo: cada quiebre suma metros. El cable <b style="color:var(--txt)">no puede cruzar</b> columnas ni el público: rodéalos. Toca un quiebre para quitarlo.</p>
+      <p class="hint">Arrastra desde el <b style="color:var(--txt)">objetivo</b> de cada cámara hasta una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo: cada quiebre suma metros. El cable <b style="color:var(--txt)">no puede cruzar</b> columnas ni el público: rodéalos. Toca un quiebre para quitarlo. <b style="color:var(--txt)">Pellizca con dos dedos</b> para acercar; arrastra el fondo para moverte.</p>
     </div>
 
     <button id="reset">Reiniciar plano</button>
@@ -181,10 +181,11 @@ let cables=new Array(cams.length).fill(null);
 /* ============================================================
    DIBUJO ESTÁTICO (rejilla, escenario, mesa, cámaras)
    ============================================================ */
-const gStatic=el("g",{},svg);
-const gCables=el("g",{},svg);
-const gTemp=el("g",{},svg);
-const gPorts=el("g",{},svg);
+const content=el("g",{},svg);      // grupo que se escala/desplaza con el zoom
+const gStatic=el("g",{},content);
+const gCables=el("g",{},content);
+const gTemp=el("g",{},content);
+const gPorts=el("g",{},content);
 
 function drawStatic(){
   // fondo
@@ -288,65 +289,116 @@ function redrawCables(){
    INTERACCIÓN (pointer = táctil + ratón unificados)
    ============================================================ */
 let drag=null;
-function toSvg(evt){
+const pointers=new Map();         // dedos activos (pointerId → {x,y} pantalla)
+let pinch=null;
+const zoom={k:1,tx:0,ty:0};       // escala + desplazamiento del grupo de contenido (en viewBox)
+const VBW=m(LEVEL.planoM.w), VBH=m(LEVEL.planoM.h);
+
+function toSvg(evt){                                   // pantalla → coords de contenido (metros·escala)
   const pt=svg.createSVGPoint(); pt.x=evt.clientX; pt.y=evt.clientY;
+  return pt.matrixTransform(content.getScreenCTM().inverse());
+}
+function toVB(cx,cy){                                  // pantalla → coords de viewBox (sin el zoom)
+  const pt=svg.createSVGPoint(); pt.x=cx; pt.y=cy;
   return pt.matrixTransform(svg.getScreenCTM().inverse());
 }
+function applyZoom(){
+  zoom.k=Math.max(1,Math.min(6,zoom.k));
+  zoom.tx=Math.max(VBW*(1-zoom.k),Math.min(0,zoom.tx));   // el plano cubre siempre la vista
+  zoom.ty=Math.max(VBH*(1-zoom.k),Math.min(0,zoom.ty));
+  content.setAttribute("transform",`translate(${zoom.tx} ${zoom.ty}) scale(${zoom.k})`);
+}
 const usedInputs=()=>cables.filter(Boolean).map(c=>c.input);
+const d2=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const mid=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
+
+function startPinch(){
+  if(drag){ if(drag.kind==="new")gTemp.innerHTML=""; drag=null; }         // cancelar gesto de 1 dedo
+  const [a,b]=[...pointers.values()], mv=toVB(mid(a,b).x,mid(a,b).y);
+  pinch={ d0:d2(a,b), k0:zoom.k, L:{x:(mv.x-zoom.tx)/zoom.k, y:(mv.y-zoom.ty)/zoom.k} };
+}
+function updatePinch(){
+  const [a,b]=[...pointers.values()]; if(!a||!b)return;
+  const d=d2(a,b); if(d<1)return;
+  zoom.k=Math.max(1,Math.min(6,pinch.k0*(d/pinch.d0)));
+  const mv=toVB(mid(a,b).x,mid(a,b).y);                 // anclar el punto L bajo el centro de los dedos
+  zoom.tx=mv.x-zoom.k*pinch.L.x; zoom.ty=mv.y-zoom.k*pinch.L.y;
+  applyZoom();
+}
 
 svg.addEventListener("pointerdown",e=>{
+  svg.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===2){ startPinch(); return; }        // segundo dedo → pellizco
+  if(pointers.size>2) return;
   const t=e.target;
-  // 1. nuevo cable desde el objetivo de la cámara
-  if(t.classList.contains("outport")){
+  if(t.classList.contains("outport")){                  // nuevo cable
     const ci=+t.dataset.cam;
-    if(cables[ci]){cables[ci]=null;redrawCables();updateHUD();}          // re-cablear
+    if(cables[ci]){cables[ci]=null;redrawCables();updateHUD();}
     const p=cams[ci].port;
     drag={kind:"new",ci,line:el("line",{x1:m(p.x),y1:m(p.y),x2:m(p.x),y2:m(p.y),stroke:css("--cyan"),"stroke-width":3,"stroke-dasharray":"6 5",opacity:.8},gTemp)};
-    svg.setPointerCapture(e.pointerId);
-  }
-  // 2. quiebre existente: arrastrar para mover, tocar para quitar
-  else if(t.classList.contains("wp")){
+  }else if(t.classList.contains("wp")){                 // mover/quitar quiebre
     drag={kind:"wp",ci:+t.dataset.cam,wp:+t.dataset.wp,moved:false,sx:e.clientX,sy:e.clientY};
-    svg.setPointerCapture(e.pointerId);
-  }
-  // 3. agarrar un segmento -> nace un quiebre ahí y se arrastra
-  else if(t.classList.contains("seg")){
+  }else if(t.classList.contains("seg")){                // agarrar segmento → nace quiebre
     const ci=+t.dataset.cam, seg=+t.dataset.seg, p=toSvg(e);
     cables[ci].wps.splice(seg,0,{x:p.x/S,y:p.y/S});
-    drag={kind:"wp",ci,wp:seg,moved:true,sx:e.clientX,sy:e.clientY};      // moved:true → no se borra al soltar
-    svg.setPointerCapture(e.pointerId);
+    drag={kind:"wp",ci,wp:seg,moved:true,sx:e.clientX,sy:e.clientY};
     redrawCables(); updateHUD();
+  }else{                                                // fondo vacío → desplazar
+    drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty};
   }
 });
 
 svg.addEventListener("pointermove",e=>{
+  if(pointers.has(e.pointerId)) pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch){ updatePinch(); return; }
   if(!drag)return;
-  const p=toSvg(e);
   if(drag.kind==="new"){
-    drag.line.setAttribute("x2",p.x); drag.line.setAttribute("y2",p.y);
-  }else{                                                                  // moviendo quiebre
+    const p=toSvg(e); drag.line.setAttribute("x2",p.x); drag.line.setAttribute("y2",p.y);
+  }else if(drag.kind==="pan"){
+    const a=toVB(drag.sx,drag.sy), b=toVB(e.clientX,e.clientY);
+    zoom.tx=drag.tx0+(b.x-a.x); zoom.ty=drag.ty0+(b.y-a.y); applyZoom();
+  }else{                                                // moviendo quiebre
     if(Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>6)drag.moved=true;
-    cables[drag.ci].wps[drag.wp]={x:p.x/S,y:p.y/S};
+    const p=toSvg(e); cables[drag.ci].wps[drag.wp]={x:p.x/S,y:p.y/S};
     redrawCables(); updateHUD();
   }
 });
 
-svg.addEventListener("pointerup",e=>{
+function endPointer(e){
+  const wasPinch=!!pinch;
+  pointers.delete(e.pointerId);
+  if(wasPinch){
+    if(pointers.size<2) pinch=null;
+    if(pointers.size===1){ const [only]=[...pointers.values()]; drag={kind:"pan",sx:only.x,sy:only.y,tx0:zoom.tx,ty0:zoom.ty}; }
+    else drag=null;
+    return;
+  }
   if(!drag)return;
   if(drag.kind==="new"){
     const p=toSvg(e); let best=-1,bd=1e9;
     inputs.forEach((ip,i)=>{
-      if(usedInputs().includes(i))return;                                // entrada ocupada
+      if(usedInputs().includes(i))return;
       const d=Math.hypot(p.x-m(ip.x),p.y-m(ip.y));
       if(d<bd){bd=d;best=i;}
     });
     if(best>=0 && bd<m(4)) cables[drag.ci]={input:best,wps:[]};
     gTemp.innerHTML="";
-  }else if(!drag.moved){                                                 // toque sin mover → quitar quiebre
+  }else if(drag.kind==="wp" && !drag.moved){            // toque sin mover → quitar quiebre
     cables[drag.ci].wps.splice(drag.wp,1);
   }
   drag=null; redrawCables(); updateHUD(); checkWin();
-});
+}
+svg.addEventListener("pointerup",endPointer);
+svg.addEventListener("pointercancel",endPointer);
+
+// rueda del ratón: zoom en escritorio (para probar en portátil)
+svg.addEventListener("wheel",e=>{
+  e.preventDefault();
+  const mv=toVB(e.clientX,e.clientY), L={x:(mv.x-zoom.tx)/zoom.k, y:(mv.y-zoom.ty)/zoom.k};
+  zoom.k=Math.max(1,Math.min(6, zoom.k*(e.deltaY<0?1.12:1/1.12)));
+  zoom.tx=mv.x-zoom.k*L.x; zoom.ty=mv.y-zoom.k*L.y; applyZoom();
+},{passive:false});
 
 /* ============================================================
    HUD + VICTORIA
