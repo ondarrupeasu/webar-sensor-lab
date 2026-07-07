@@ -155,21 +155,22 @@
    ============================================================ */
 const TEATRO_N1 = {
   nombre:  "Teatro · Nivel 1",
-  encargo: "Lleva las 3 cámaras del escenario hasta la cabina del fondo. Rodea las butacas y cruza el pasillo con un pasacables (uno sirve para varias cámaras). El HD-SDI aguanta 100 m; para tiradas largas, fibra.",
-  planoM:  { w:104, h:64 },
-  escalaPxM: 11,
-  mesa: { x:90, y:32, inputs:3, inFmt:"sdi" },
+  encargo: "Lleva las 3 cámaras del escenario a la cabina (a la derecha). Rodea las butacas por los laterales; para cruzar el pasillo central usa un pasacables (uno vale para varias cámaras). SDI hasta 100 m; si no, fibra.",
+  planoM:  { w:110, h:66 },
+  escalaPxM: 10.5,
+  mesa: { x:98, y:33, inputs:3, inFmt:"sdi", faces:"left" },   // cabina a la derecha, entradas mirando a la sala
   cams: [
-    { id:"CAM 1", x:26, y:14, out:"sdi" },
-    { id:"CAM 2", x:26, y:50, out:"sdi" },
-    { id:"CAM 3", x:26, y:32, out:"sdi" },
+    { id:"CAM 1", x:25, y:12, out:"sdi" },
+    { id:"CAM 2", x:25, y:54, out:"sdi" },
+    { id:"CAM 3", x:25, y:42, out:"sdi" },
   ],
-  // zonas del recinto (kind define el comportamiento: stage=decor, pit/seating=bloqueo, aisle=cruce con pasacables)
+  // zonas (kind: stage=decor, pit/seating=bloqueo, aisle=pasillo cruzable con pasacables)
   zones: [
-    { shape:"rect", kind:"stage",   x:11.5, y:32, w:13, h:52, label:"ESCENARIO" },
-    { shape:"rect", kind:"pit",     x:22,   y:32, w:6,  h:48, label:"FOSO" },
-    { shape:"rect", kind:"seating", x:44,   y:32, w:28, h:24, label:"BUTACAS" },
-    { shape:"rect", kind:"aisle",   x:70,   y:32, w:12, h:52, label:"PASILLO" },
+    { shape:"rect", kind:"stage",   x:10, y:33, w:12, h:54, label:"ESCENARIO" },
+    { shape:"rect", kind:"pit",     x:20, y:33, w:6,  h:50, label:"FOSO" },
+    { shape:"rect", kind:"seating", x:56, y:21, w:56, h:14, label:"BUTACAS" },
+    { shape:"rect", kind:"aisle",   x:56, y:33, w:56, h:10, label:"PASILLO CENTRAL" },
+    { shape:"rect", kind:"seating", x:56, y:45, w:56, h:14, label:"BUTACAS" },
   ],
   rampEur: 120, rampW: 12,
   cableTypes: {
@@ -178,7 +179,7 @@ const TEATRO_N1 = {
   },
   converters: {},
   convEur: 250,
-  budget: 2600,
+  budget: 2800,
 };
 
 const GAME = {
@@ -281,24 +282,27 @@ function drawStatic(){
   const sl=el("text",{x:bx+m(10),y:by-8,fill:css("--dim"),"font-size":11,"text-anchor":"middle"},gStatic);
   sl.textContent="20 m";
 
-  // mesa / cabina
-  const mw=26,mh=10;
+  // mesa / cabina (faces "top"=entradas arriba; "left"=entradas a la izquierda, mirando a la sala)
+  const faces=LEVEL.mesa.faces||"top", nin=LEVEL.mesa.inputs;
+  const mw = faces==="left"?20:26, mh = faces==="left"?(nin*7+8):10;
   el("rect",{x:m(LEVEL.mesa.x-mw/2),y:m(LEVEL.mesa.y-mh/2),width:m(mw),height:m(mh),fill:css("--panel"),stroke:css("--line"),"stroke-width":1.5,rx:3},gStatic);
-  const ml=el("text",{x:m(LEVEL.mesa.x),y:m(LEVEL.mesa.y+2),fill:css("--dim"),"font-size":9,"letter-spacing":"1","text-anchor":"middle"},gStatic);
-  ml.textContent="MESA / CABINA";
+  const ml=el("text",{x:m(LEVEL.mesa.x+(faces==="left"?2:0)),y:m(LEVEL.mesa.y)+3,fill:css("--dim"),"font-size":8,"letter-spacing":"1","text-anchor":"middle"},gStatic);
+  ml.textContent="CABINA";
   inputs.forEach((p,i)=>{
     el("circle",{cx:m(p.x),cy:m(p.y),r:8,fill:css("--bg"),stroke:css("--dim"),"stroke-width":1.5,"data-in":i,class:"inport"},gPorts);
-    const t=el("text",{x:m(p.x),y:m(p.y)-13,fill:css("--dim"),"font-size":9,"text-anchor":"middle"},gStatic);
+    const lx=faces==="left"?m(p.x)+13:m(p.x), ly=faces==="left"?m(p.y)+3:m(p.y)-13, an=faces==="left"?"start":"middle";
+    const t=el("text",{x:lx,y:ly,fill:css("--dim"),"font-size":9,"text-anchor":an},gStatic);
     t.textContent="IN"+(i+1);
   });
 
-  // cámaras + objetivo
+  // cámaras (icono: cuerpo + objetivo mirando al escenario, a la izquierda; visor arriba)
   cams.forEach((c,i)=>{
-    el("circle",{cx:m(c.x),cy:m(c.y),r:m(2.4),fill:css("--panel"),stroke:css("--cyan"),"stroke-width":2},gStatic);
-    el("circle",{cx:m(c.x),cy:m(c.y),r:m(1),fill:css("--bg"),stroke:css("--cyan"),"stroke-width":1.5},gStatic);
-    const lb=el("text",{x:m(c.x),y:m(c.y)-m(3.4),fill:css("--txt"),"font-size":12,"letter-spacing":"1","text-anchor":"middle"},gStatic);
+    el("rect",{x:m(c.x-2),y:m(c.y-1.6),width:m(4),height:m(3.2),rx:m(0.6),fill:css("--panel"),stroke:css("--cyan"),"stroke-width":1.6},gStatic);
+    el("circle",{cx:m(c.x-2.5),cy:m(c.y),r:m(1.1),fill:css("--bg"),stroke:css("--cyan"),"stroke-width":1.6},gStatic);
+    el("rect",{x:m(c.x-0.3),y:m(c.y-2.7),width:m(1.8),height:m(1.1),rx:m(0.3),fill:css("--cyan")},gStatic);
+    const lb=el("text",{x:m(c.x),y:m(c.y)-m(3.6),fill:css("--txt"),"font-size":11,"letter-spacing":"0.5","text-anchor":"middle"},gStatic);
     lb.textContent=c.id+" · "+c.out.toUpperCase();
-    el("circle",{cx:m(c.port.x),cy:m(c.port.y),r:8,fill:css("--cyan")},gPorts);
+    el("circle",{cx:m(c.port.x),cy:m(c.port.y),r:6,fill:css("--cyan")},gPorts);
     el("circle",{cx:m(c.port.x),cy:m(c.port.y),r:16,fill:"transparent",style:"cursor:grab","data-cam":i,class:"outport"},gPorts);
   });
 }
@@ -614,8 +618,11 @@ function cargarNivel(vid,idx){
   S=LEVEL.escalaPxM;
   VBW=m(LEVEL.planoM.w); VBH=m(LEVEL.planoM.h);
   svg.setAttribute("viewBox",`0 0 ${VBW} ${VBH}`);
-  inputs=[]; for(let i=0;i<LEVEL.mesa.inputs;i++) inputs.push({x:LEVEL.mesa.x+(i-(LEVEL.mesa.inputs-1)/2)*6, y:LEVEL.mesa.y-4});
-  cams=LEVEL.cams.map(c=>({...c, port:{x:c.x, y:c.y+4}}));
+  inputs=[]; { const n=LEVEL.mesa.inputs, faces=LEVEL.mesa.faces||"top";
+    for(let i=0;i<n;i++) inputs.push(faces==="left"
+      ? {x:LEVEL.mesa.x-11, y:LEVEL.mesa.y+(i-(n-1)/2)*7}
+      : {x:LEVEL.mesa.x+(i-(n-1)/2)*6, y:LEVEL.mesa.y-4}); }
+  cams=LEVEL.cams.map(c=>({...c, port:{x:c.x+3, y:c.y}}));   // salida por detrás de la cámara
   cables=new Array(cams.length).fill(null);
   camConv=new Array(cams.length).fill(null);
   inConv=new Array(inputs.length).fill(null);
