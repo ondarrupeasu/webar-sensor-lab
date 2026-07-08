@@ -172,6 +172,7 @@ const STR = {
     valid_h:"Señal en la mesa ✓", invalid_h:"Hay fallos que corregir",
     ramp_name:"Pasacables", rx_name:"Receptor (RX)",
     meta_conv:"€ · toca cámara o entrada", meta_ramp:"€ · toca un pasillo (lo comparten varias cámaras)", meta_rx:"toca cerca de la cámara inalámbrica (dentro del alcance RF)",
+    dec_name:"Decimator", meta_dec:"€ · toca una cámara (invierte HD↔4K)",
     hint:`Elige el <b>tipo de cable</b> y arrastra desde el <b>objetivo</b> de la cámara a una <b>entrada</b> de la mesa. <b>Tira del cable</b> para curvarlo (suma metros); rodea las butacas (los pasillos se cruzan libres). Si el nivel trae conversores, colócalos tocando cámara o entrada — ojo al sentido. El juego <b>no te avisa</b> si algo no encaja: pulsa <b>Ya lo tengo</b> para validar. Pellizca para acercar.`,
     m_notconn:n=>`${n}: sin conectar a la mesa.`,
     m_hard:n=>`${n}: el cable cruza las butacas, el foso u otro obstáculo.`,
@@ -182,6 +183,8 @@ const STR = {
     m_fmtcam:(n,eo,s)=>`${n}: la cámara entrega ${eo} y el cable es ${s}: no encajan.`,
     m_fmtin:(n,c,s,ei)=>`${n}: el cable ${c} (${s}) no entra en la mesa, que espera ${ei}.`,
     m_budget:(c,b)=>`Presupuesto: ${c} € superan el tope de ${b} €.`,
+    m_res4k:(n,c)=>`${n}: señal 4K por un cable ${c} que no transporta 4K (usa 6G/12G/fibra, o baja a HD con un Decimator).`,
+    m_resmesa:(n,r,mr)=>`${n}: la señal llega en ${r} y la mesa trabaja en ${mr} (usa un Decimator).`,
     m_norx:n=>`${n}: sin receptor (RX) colocado.`,
     m_range:(n,d,r)=>`${n}: el receptor está a ${d} m, fuera del alcance RF (${r} m).`,
     w_ok:n=>`Las ${n} cámaras entregan señal dentro de presupuesto.`,
@@ -202,6 +205,7 @@ const STR = {
     valid_h:"Signal at the desk ✓", invalid_h:"Issues to fix",
     ramp_name:"Cable ramp", rx_name:"Receiver (RX)",
     meta_conv:"€ · tap a camera or input", meta_ramp:"€ · tap an aisle (shared by cameras)", meta_rx:"tap near the wireless camera (within RF range)",
+    dec_name:"Decimator", meta_dec:"€ · tap a camera (flips HD↔4K)",
     hint:`Pick a <b>cable type</b> and drag from the camera's <b>output</b> to a desk <b>input</b>. <b>Pull the cable</b> to bend it (adds metres); route around the seating (aisles are free to cross). If the level has converters, place them by tapping a camera or input — mind the direction. The game <b>won't warn you</b> if something doesn't fit: press <b>I'm done</b> to validate. Pinch to zoom.`,
     m_notconn:n=>`${n}: not connected to the desk.`,
     m_hard:n=>`${n}: the cable crosses the seating, the pit or another obstacle.`,
@@ -212,6 +216,8 @@ const STR = {
     m_fmtcam:(n,eo,s)=>`${n}: the camera delivers ${eo} and the cable is ${s}: they don't match.`,
     m_fmtin:(n,c,s,ei)=>`${n}: the ${c} cable (${s}) doesn't fit the desk, which expects ${ei}.`,
     m_budget:(c,b)=>`Budget: ${c} € exceeds the ${b} € cap.`,
+    m_res4k:(n,c)=>`${n}: 4K signal over a ${c} cable that doesn't carry 4K (use 6G/12G/fibre, or drop to HD with a Decimator).`,
+    m_resmesa:(n,r,mr)=>`${n}: the signal arrives in ${r} and the desk works in ${mr} (use a Decimator).`,
     m_norx:n=>`${n}: no receiver (RX) placed.`,
     m_range:(n,d,r)=>`${n}: the receiver is ${d} m away, out of RF range (${r} m).`,
     w_ok:n=>`All ${n} cameras deliver signal within budget.`,
@@ -525,9 +531,43 @@ const CONCIERTO_N3 = {
   budget: 5800,
 };
 
+const TEATRO_N4 = {
+  nombre:  { es:"Teatro · Nivel 4", en:"Theatre · Level 4" },
+  encargo: { es:"Producción 4K. A más resolución, menos distancia: el 12G-SDI aguanta ~45 m, el 6G ~70 m. La CAM 3 (cerca) va por 12G; la CAM 4 (media) por 6G; las del frente están lejos → o FIBRA (mantienes 4K) o un DECIMATOR que baja a HD para tirar de HD-SDI barato. Cuadra el presupuesto.",
+             en:"4K production. Higher resolution, shorter reach: 12G-SDI holds ~45 m, 6G ~70 m. CAM 3 (close) takes 12G; CAM 4 (mid) takes 6G; the front ones are far → either FIBRE (keep 4K) or a DECIMATOR that drops to HD to run cheap HD-SDI. Meet the budget." },
+  planoM:  { w:120, h:72 },
+  escalaPxM: 8.5,
+  mesa: { x:106, y:36, inputs:4, inFmt:"sdi", inRes:"4k", faces:"left", label:"CABINA" },
+  cams: [
+    { id:"CAM 1", x:24, y:18, out:"sdi", res:"4k" },   // frente lejos → fibra o Decimator
+    { id:"CAM 2", x:24, y:54, out:"sdi", res:"4k" },   // frente lejos → fibra o Decimator
+    { id:"CAM 3", x:96, y:20, out:"sdi", res:"4k" },   // cerca → 12G
+    { id:"CAM 4", x:50, y:8,  out:"sdi", res:"4k" },   // media → 6G
+  ],
+  zones: [
+    { shape:"rect", kind:"stage",   x:10, y:36, w:12, h:58, label:"ESCENARIO" },
+    { shape:"rect", kind:"pit",     x:20, y:36, w:6,  h:54, label:"FOSO" },
+    { shape:"rect", kind:"seating", x:60, y:22, w:64, h:14, label:"BUTACAS" },
+    { shape:"rect", kind:"walk",    x:60, y:36, w:64, h:10, label:"PASILLO CENTRAL" },
+    { shape:"rect", kind:"seating", x:60, y:50, w:64, h:14, label:"BUTACAS" },
+    { shape:"rect", kind:"walk",    x:96, y:36, w:8,  h:58, label:"PASILLO" },
+  ],
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    sdi:    { nombre:"HD-SDI",  signal:"sdi",              limite:100, eurM:3,  conv:0, color:"--cyan"  },
+    sdi6g:  { nombre:"6G-SDI",  signal:"sdi", res:"4k",    limite:70,  eurM:5,  conv:0, color:"--cyan"  },
+    sdi12g: { nombre:"12G-SDI", signal:"sdi", res:"4k",    limite:45,  eurM:7,  conv:0, color:"--cyan"  },
+    fibra:  { nombre:"Fibra",   signal:"sdi", res:"4k",    limite:500, eurM:10, conv:2, color:"--fiber" },
+  },
+  converters: {},
+  convEur: 250,
+  decEur: 250,
+  budget: 2400,
+};
+
 const GAME = {
   teatro:    { sub:{ es:"Empiezas con SDI y HDMI en un teatro pequeño. Al subir de nivel el recinto crece: aparece la fibra (SDI no llega) y luego los formatos mixtos (IP).",
-                     en:"Start with SDI and HDMI in a small theatre. As levels go up the venue grows: fibre appears (SDI won't reach) and then mixed formats (IP)." }, niveles:[ TEATRO_N1, TEATRO_N2, TEATRO_N3 ] },
+                     en:"Start with SDI and HDMI in a small theatre. As levels go up the venue grows: fibre appears (SDI won't reach) and then mixed formats (IP)." }, niveles:[ TEATRO_N1, TEATRO_N2, TEATRO_N3, TEATRO_N4 ] },
   concierto: { sub:{ es:"Grandes distancias (fibra), público de pie enorme, torres de PA. Escenario a la izquierda.",
                      en:"Long distances (fibre), huge standing crowd, PA towers. Stage on the left." }, niveles:[ CONCIERTO_N1, CONCIERTO_N2, CONCIERTO_N3 ] },
   setTV:     { sub:{ es:"Decorado y mesa arriba, cámaras abajo apuntando al set. Control en sala aparte (patch de pared).",
@@ -546,7 +586,7 @@ const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 let LEVEL=null, S=10, inputs=[], cams=[], VBW=0, VBH=0;
 const m=v=>v*S;                                   // metros → px de dibujo (lee la S actual)
 
-let cables=[], camConv=[], inConv=[], ramps=[], rx={};   // rx[ci]={x,y} = receptor de la cámara inalámbrica ci
+let cables=[], camConv=[], inConv=[], ramps=[], rx={}, camDec=[];   // rx[ci]={x,y}=receptor inalámbrico; camDec[ci]=true si hay Decimator
 let curType=null, curConv=null, mode="cable", locked=false;
 const ctOf=ci=>LEVEL.cableTypes[cables[ci].type];
 
@@ -654,7 +694,7 @@ function drawStatic(){
     el("rect",{x:m(c.x-1.8),y:m(c.y-1.8),width:m(3.8),height:m(3.6),rx:m(0.5),fill:css("--panel"),stroke:css("--cyan"),"stroke-width":1.7},gStatic);
     const ly = dir==="up" ? m(c.y)+m(4.8) : m(c.y)-m(3.8);
     const lb=el("text",{x:m(c.x),y:ly,fill:css("--txt"),"font-size":11,"letter-spacing":"0.5","text-anchor":"middle"},gStatic);
-    lb.textContent=c.id+(c.wireless?" · RF→"+c.rxFmt.toUpperCase():" · "+c.out.toUpperCase());
+    lb.textContent=c.id+(c.wireless?" · RF→"+c.rxFmt.toUpperCase():" · "+c.out.toUpperCase())+(c.res==="4k"?" 4K":"");
     if(c.wireless){
       const tx=el("text",{x:m(c.x),y:m(c.y)+m(4),fill:css("--amber"),"font-size":8,"letter-spacing":"1","text-anchor":"middle"},gStatic); tx.textContent="TX";
     }else{
@@ -708,7 +748,7 @@ function redrawCables(){
     if(!c)return;
     const p=pathPoints(ci), len=pathLen(ci), ct=ctOf(ci);
     const fmtOk=(ct.signal===effOut(ci) && ct.signal===effIn(c.input));
-    const invalid=cableCross(ci)||len>ct.limite||!fmtOk;
+    const invalid=cableCross(ci)||len>ct.limite||!fmtOk||resProblem(ci,ct)!==null;
     const col=(locked&&invalid)?css("--red"):css(ct.color);
     for(let i=0;i<p.length-1;i++){
       const a=p[i], b=p[i+1];
@@ -738,6 +778,11 @@ function redrawCables(){
   };
   camConv.forEach((k,ci)=>{ if(k){const cv=LEVEL.converters[k]; badge(cams[ci].port, cv.tag, cv.from!==cams[ci].out);} });
   inConv.forEach((k,j)=>{ if(k){const cv=LEVEL.converters[k]; badge(inputs[j], cv.tag, cv.to!==inFmtOf(j));} });
+  // Decimator en cámara (indicador de resolución resultante)
+  camDec.forEach((d,ci)=>{ if(!d)return; const c=cams[ci];
+    el("rect",{x:m(c.x)+7,y:m(c.y)+6,width:56,height:15,rx:3,fill:css("--panel"),stroke:css("--fiber"),"stroke-width":1.2,"pointer-events":"none"},gCables);
+    const t=el("text",{x:m(c.x)+35,y:m(c.y)+17,fill:css("--fiber"),"font-size":9,"font-weight":"bold","text-anchor":"middle","pointer-events":"none"},gCables); t.textContent="DEC "+(effRes(ci)==="4k"?"↑4K":"↓HD");
+  });
   // cámaras inalámbricas: enlace RF + receptor RX (con su puerto de salida)
   cams.forEach((cam,ci)=>{
     if(!cam.wireless || !rx[ci]) return;
@@ -767,6 +812,18 @@ function effIn(j){
   const base=inFmtOf(j);
   const k=inConv[j]; if(!k) return base;
   const cv=LEVEL.converters[k]; return cv.to===base ? cv.from : null;   // el conversor debe entregar el formato de la entrada
+}
+/* --- resolución (HD / 4K) --- */
+const resRank={hd:0,"4k":1};
+const camRes=ci=>cams[ci].res||"hd";
+function effRes(ci){ const nat=camRes(ci); return camDec[ci] ? (nat==="4k"?"hd":"4k") : nat; }   // el Decimator invierte la resolución
+const cableRes=ct=>ct.res||"hd";                          // resolución máxima que transporta el cable
+const mesaRes=()=>LEVEL.mesa.inRes||"hd";                  // resolución de la mesa (acepta hasta esa)
+function resProblem(ci,ct){                                // devuelve clave de problema de resolución, o null
+  const er=effRes(ci);
+  if(er==="4k" && cableRes(ct)!=="4k") return "cable";     // 4K por un cable que no lo transporta
+  if(resRank[er] > resRank[mesaRes()]) return "mesa";      // la mesa no acepta esa resolución
+  return null;
 }
 
 /* ============================================================
@@ -833,6 +890,13 @@ svg.addEventListener("pointerdown",e=>{
     if(ci>=0){ rx[ci]={x:mx,y:my}; redrawCables(); updateHUD(); return; }
     drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
   }
+  if(mode==="dec"){                                     // poner/quitar Decimator en la cámara más cercana
+    const p=toSvg(e), mx=p.x/S, my=p.y/S;
+    let ci=-1,bd=1e9;
+    cams.forEach((c,i)=>{ const d=Math.hypot(mx-c.x,my-c.y); if(d<bd){bd=d;ci=i;} });
+    if(ci>=0){ camDec[ci]=!camDec[ci]; redrawCables(); updateHUD(); return; }
+    drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
+  }
   if(t.classList.contains("outport")){                  // nuevo cable (desde la cámara, o desde su RX si es inalámbrica)
     const ci=+t.dataset.cam;
     if(cables[ci]){cables[ci]=null;redrawCables();updateHUD();}
@@ -897,12 +961,13 @@ function totals(){
     const ct=LEVEL.cableTypes[c.type], len=pathLen(ci);
     const fmtOk=(ct.signal===effOut(ci) && ct.signal===effIn(c.input));
     total+=len; convs+=ct.conv; cost+=len*ct.eurM+ct.conv*LEVEL.convEur;
-    if(len>ct.limite||cableCross(ci)||!fmtOk)allOk=false;
+    if(len>ct.limite||cableCross(ci)||!fmtOk||resProblem(ci,ct)!==null)allOk=false;
   });
   camConv.forEach(k=>{if(k){convs++;cost+=LEVEL.converters[k].eur;}});
   inConv.forEach(k=>{if(k){convs++;cost+=LEVEL.converters[k].eur;}});
   cost+=ramps.length*LEVEL.rampEur;
   cams.forEach((c,ci)=>{ if(c.wireless && rx[ci]) cost+=c.txEur; });   // par TX+RX de cada inalámbrica colocada
+  camDec.forEach(d=>{ if(d) cost+=(LEVEL.decEur||250); });             // Decimator por cámara
   return {conn,total,convs,cost,allOk,within:cost<=LEVEL.budget,ramps:ramps.length};
 }
 function updateHUD(){
@@ -936,6 +1001,9 @@ function validate(){
       if(ct.signal!==eo) problemas.push(tr('m_fmtcam')(name, eo.toUpperCase(), ct.signal.toUpperCase()));
       else if(ct.signal!==ei) problemas.push(tr('m_fmtin')(name, tcable(ct.nombre), ct.signal.toUpperCase(), ei.toUpperCase()));
     }
+    const rp=resProblem(ci,ct);
+    if(rp==="cable") problemas.push(tr('m_res4k')(name, tcable(ct.nombre)));
+    else if(rp==="mesa") problemas.push(tr('m_resmesa')(name, effRes(ci).toUpperCase(), mesaRes().toUpperCase()));
   });
   const t=totals();
   if(t.cost>LEVEL.budget) problemas.push(tr('m_budget')(t.cost.toFixed(0), LEVEL.budget));
@@ -995,16 +1063,24 @@ function buildInv(){
     wb.addEventListener("click",()=>{mode="rx";refreshInv();});
     elemBox.appendChild(wb);
   }
+  const hasDec = cams.some(c=>c.res) || mesaRes()!=="hd";
+  if(hasDec){
+    const db=document.createElement("button");
+    db.className="invbtn"; db.dataset.kind="dec"; db.dataset.key="dec";
+    db.innerHTML=`<span><span class="nm">${tr('dec_name')}</span><span class="meta">${LEVEL.decEur||250} ${tr('meta_dec')}</span></span><span class="dot" style="background:var(--fiber)"></span>`;
+    db.addEventListener("click",()=>{mode="dec";refreshInv();});
+    elemBox.appendChild(db);
+  }
   // ocultar secciones que este nivel no usa
   document.getElementById("convBlock").style.display = Object.keys(LEVEL.converters).length ? "" : "none";
-  document.getElementById("elemBlock").style.display = (hasRamp||hasWireless) ? "" : "none";
+  document.getElementById("elemBlock").style.display = (hasRamp||hasWireless||hasDec) ? "" : "none";
   refreshInv();
 }
 function refreshInv(){
   document.querySelectorAll(".invbtn").forEach(b=>{
     const kind=b.dataset.kind, key=b.dataset.key;
-    const on=(kind==="cable"&&mode==="cable"&&key===curType)||(kind==="conv"&&mode==="conv"&&key===curConv)||(kind==="ramp"&&mode==="ramp")||(kind==="rx"&&mode==="rx");
-    const c=kind==="cable"?css(LEVEL.cableTypes[key].color):((kind==="ramp"||kind==="rx")?css("--amber"):css("--txt"));
+    const on=(kind==="cable"&&mode==="cable"&&key===curType)||(kind==="conv"&&mode==="conv"&&key===curConv)||(kind==="ramp"&&mode==="ramp")||(kind==="rx"&&mode==="rx")||(kind==="dec"&&mode==="dec");
+    const c=kind==="cable"?css(LEVEL.cableTypes[key].color):(kind==="dec"?css("--fiber"):(kind==="ramp"||kind==="rx")?css("--amber"):css("--txt"));
     b.classList.toggle("on",on);
     b.style.color=on?c:""; b.style.borderColor=on?c:"";
   });
@@ -1037,7 +1113,7 @@ function cargarNivel(vid,idx){
   cables=new Array(cams.length).fill(null);
   camConv=new Array(cams.length).fill(null);
   inConv=new Array(inputs.length).fill(null);
-  ramps=[]; rx={}; curType=Object.keys(LEVEL.cableTypes)[0]; curConv=null; mode="cable"; locked=false;
+  ramps=[]; rx={}; camDec=new Array(cams.length).fill(false); curType=Object.keys(LEVEL.cableTypes)[0]; curConv=null; mode="cable"; locked=false;
   zoom.k=1; zoom.tx=0; zoom.ty=0; applyZoom();
   document.getElementById("nivel").textContent=pick(LEVEL.nombre);
   document.getElementById("encargo").textContent=pick(LEVEL.encargo);
@@ -1050,7 +1126,7 @@ function reset(){
   cables=new Array(cams.length).fill(null);
   camConv=new Array(cams.length).fill(null);
   inConv=new Array(inputs.length).fill(null);
-  ramps.length=0; rx={}; locked=false;
+  ramps.length=0; rx={}; camDec=new Array(cams.length).fill(false); locked=false;
   document.getElementById("win").classList.remove("show");
   redrawCables(); updateHUD();
 }
