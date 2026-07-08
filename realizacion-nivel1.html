@@ -534,16 +534,17 @@ const CONCIERTO_N3 = {
 
 const TEATRO_N4 = {
   nombre:  { es:"Teatro · Nivel 4", en:"Theatre · Level 4" },
-  encargo: { es:"Producción 4K. A más resolución, menos distancia: el 12G-SDI aguanta ~45 m, el 6G ~70 m. La CAM 3 (cerca) va por 12G; la CAM 4 (media) por 6G; las del frente están lejos → o FIBRA (mantienes 4K) o un DECIMATOR que baja a HD para tirar de HD-SDI barato. Cuadra el presupuesto.",
-             en:"4K production. Higher resolution, shorter reach: 12G-SDI holds ~45 m, 6G ~70 m. CAM 3 (close) takes 12G; CAM 4 (mid) takes 6G; the front ones are far → either FIBRE (keep 4K) or a DECIMATOR that drops to HD to run cheap HD-SDI. Meet the budget." },
+  encargo: { es:"Producción 4K con cámaras REPOSICIONABLES: arrastra cada una dentro de su área de trabajo (recuadro punteado). A más resolución, menos distancia: 12G ~45 m, 6G ~70 m. Acercar una cámara puede dejarte usar un cable más barato; alejarla obliga a FIBRA o a un DECIMATOR (baja a HD para tirar de HD-SDI). Cuadra el presupuesto.",
+             en:"4K production with MOVABLE cameras: drag each one inside its working area (dashed box). Higher resolution, shorter reach: 12G ~45 m, 6G ~70 m. Moving a camera closer may let you use a cheaper cable; moving it away forces FIBRE or a DECIMATOR (drop to HD to run HD-SDI). Meet the budget." },
+  freeCams: true,
   planoM:  { w:120, h:72 },
   escalaPxM: 8.5,
   mesa: { x:106, y:36, inputs:4, inFmt:"sdi", inRes:"4k", faces:"left", label:"CABINA" },
   cams: [
-    { id:"CAM 1", x:24, y:18, out:"sdi", res:"4k" },   // frente lejos → fibra o Decimator
-    { id:"CAM 2", x:24, y:54, out:"sdi", res:"4k" },   // frente lejos → fibra o Decimator
-    { id:"CAM 3", x:96, y:20, out:"sdi", res:"4k" },   // cerca → 12G
-    { id:"CAM 4", x:50, y:8,  out:"sdi", res:"4k" },   // media → 6G
+    { id:"CAM 1", x:24, y:18, out:"sdi", res:"4k", area:{x:23,y:20,w:6,h:22} },   // frente-izq (junto al foso): lejos → fibra/Decimator
+    { id:"CAM 2", x:24, y:54, out:"sdi", res:"4k", area:{x:23,y:54,w:6,h:22} },   // frente-izq: lejos → fibra/Decimator
+    { id:"CAM 3", x:96, y:20, out:"sdi", res:"4k", area:{x:96,y:36,w:6,h:52} },   // pasillo lateral (junto a cabina): cerca → 12G
+    { id:"CAM 4", x:60, y:36, out:"sdi", res:"4k", area:{x:60,y:36,w:60,h:8} },   // pasillo CENTRAL, gran latitud: acércala (12G/6G) o aléjala (fibra/Decimator)
   ],
   zones: [
     { shape:"rect", kind:"stage",   x:10, y:36, w:12, h:58, label:"ESCENARIO" },
@@ -616,6 +617,15 @@ function zoneBlock(z){                             // cómo se comporta cada zon
   if(z.kind==="aisle") return "ramp";              // cruzable con pasacables (de momento sin usar)
   if(z.kind==="stage"||z.kind==="walk"||z.kind==="decor") return "none";  // decor / pasillo libre: no bloquea (p.ej. focos de suelo)
   return "hard";                                   // pit, seating, wall, column…
+}
+
+function inHardZone(x,y){                          // ¿el punto cae en zona no pisable (público, foso, muro)?
+  for(const z of (LEVEL.zones||[])){
+    if(zoneBlock(z)!=="hard")continue;
+    if(z.shape==="circle"){ if(Math.hypot(x-z.x,y-z.y)<=(z.r||z.w/2))return true; }
+    else if(x>=z.x-z.w/2&&x<=z.x+z.w/2&&y>=z.y-z.h/2&&y<=z.y+z.h/2)return true;
+  }
+  return false;
 }
 
 function el(tag,attrs={},parent){
@@ -693,6 +703,12 @@ function drawStatic(){
       : `M${m(c.x-1.8)},${m(c.y)} L${m(c.x-6.5)},${m(c.y-3)} L${m(c.x-6.5)},${m(c.y+3)} Z`;
     el("path",{d:fov,fill:"rgba(63,224,208,.10)",stroke:css("--cyan"),"stroke-width":1},gStatic);
     el("rect",{x:m(c.x-1.8),y:m(c.y-1.8),width:m(3.8),height:m(3.6),rx:m(0.5),fill:css("--panel"),stroke:css("--cyan"),"stroke-width":1.7},gStatic);
+    if(LEVEL.freeCams&&!locked){                          // cámara reposicionable: área de trabajo + anillo + tirador
+      const a=c.area||LEVEL.camArea;
+      if(a) el("rect",{x:m(a.x-a.w/2),y:m(a.y-a.h/2),width:m(a.w),height:m(a.h),rx:m(1),fill:"rgba(63,224,208,.05)",stroke:css("--cyan"),"stroke-width":1,"stroke-dasharray":"2 4",opacity:.5},gStatic);
+      el("circle",{cx:m(c.x),cy:m(c.y),r:m(2.6),fill:"none",stroke:css("--cyan"),"stroke-width":1,"stroke-dasharray":"1.5 2.5",opacity:.7},gStatic);
+      el("circle",{cx:m(c.x),cy:m(c.y),r:14,fill:"transparent",style:"cursor:move","data-cam":i,class:"camdrag"},gPorts);
+    }
     const ly = dir==="up" ? m(c.y)+m(4.8) : m(c.y)-m(3.8);
     const lb=el("text",{x:m(c.x),y:ly,fill:css("--txt"),"font-size":11,"letter-spacing":"0.5","text-anchor":"middle"},gStatic);
     lb.textContent=c.id+(c.wireless?" · RF→"+c.rxFmt.toUpperCase():" · "+c.out.toUpperCase())+(c.res==="4k"?" 4K":"");
@@ -869,6 +885,9 @@ svg.addEventListener("pointerdown",e=>{
   if(pointers.size>2) return;
   if(locked){ drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return; }
   const t=e.target;
+  if(LEVEL.freeCams && t.classList.contains("camdrag")){ // reposicionar cámara (niveles altos)
+    drag={kind:"movecam",ci:+t.dataset.cam}; return;
+  }
   if(mode==="conv" && curConv){                         // colocar conversor en cualquier puerto
     if(t.classList.contains("outport")){ const ci=+t.dataset.cam; camConv[ci]=(camConv[ci]===curConv?null:curConv); redrawCables(); updateHUD(); return; }
     if(t.classList.contains("inport")){ const j=+t.dataset.in; inConv[j]=(inConv[j]===curConv?null:curConv); redrawCables(); updateHUD(); return; }
@@ -923,6 +942,11 @@ svg.addEventListener("pointermove",e=>{
   if(!drag)return;
   if(drag.kind==="new"){ const p=toSvg(e); drag.line.setAttribute("x2",p.x); drag.line.setAttribute("y2",p.y); }
   else if(drag.kind==="pan"){ const a=toVB(drag.sx,drag.sy), b=toVB(e.clientX,e.clientY); zoom.tx=drag.tx0+(b.x-a.x); zoom.ty=drag.ty0+(b.y-a.y); applyZoom(); }
+  else if(drag.kind==="movecam"){ const p=toSvg(e), P=LEVEL.planoM, c=cams[drag.ci], a=c.area||LEVEL.camArea;
+    let nx=p.x/S, ny=p.y/S;
+    if(a){ nx=Math.max(a.x-a.w/2,Math.min(a.x+a.w/2,nx)); ny=Math.max(a.y-a.h/2,Math.min(a.y+a.h/2,ny)); }
+    else { nx=Math.max(2,Math.min(P.w-2,nx)); ny=Math.max(2,Math.min(P.h-2,ny)); }
+    if(!inHardZone(nx,ny)){ c.x=nx; c.y=ny; c.port={x:nx+3,y:ny}; drawStatic(); redrawCables(); updateHUD(); } }
   else{ if(Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>6)drag.moved=true; const p=toSvg(e); cables[drag.ci].wps[drag.wp]={x:p.x/S,y:p.y/S}; redrawCables(); updateHUD(); }
 });
 
