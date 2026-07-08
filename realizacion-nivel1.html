@@ -9,6 +9,7 @@
     --bg:#0a0e0d; --panel:#0f1513; --line:#1c2926;
     --amber:#ffb427; --cyan:#3fe0d0; --dim:#5c6b67; --txt:#e8f0ee;
     --red:#ff5a5a; --fiber:#b18cff; --eth:#5fd38a; --grid:rgba(63,224,208,.06);
+    --sdi6g:#49b6e6; --sdi12g:#6f8cf5;
     --mono:'SF Mono',ui-monospace,'Roboto Mono',Menlo,Consolas,monospace;
   }
   *{margin:0;padding:0;box-sizing:border-box}
@@ -555,8 +556,8 @@ const TEATRO_N4 = {
   rampEur: 120, rampW: 6,
   cableTypes: {
     sdi:    { nombre:"HD-SDI",  signal:"sdi",              limite:100, eurM:3,  conv:0, color:"--cyan"  },
-    sdi6g:  { nombre:"6G-SDI",  signal:"sdi", res:"4k",    limite:70,  eurM:5,  conv:0, color:"--cyan"  },
-    sdi12g: { nombre:"12G-SDI", signal:"sdi", res:"4k",    limite:45,  eurM:7,  conv:0, color:"--cyan"  },
+    sdi6g:  { nombre:"6G-SDI",  signal:"sdi", res:"4k",    limite:70,  eurM:5,  conv:0, color:"--sdi6g"  },
+    sdi12g: { nombre:"12G-SDI", signal:"sdi", res:"4k",    limite:45,  eurM:7,  conv:0, color:"--sdi12g" },
     fibra:  { nombre:"Fibra",   signal:"sdi", res:"4k",    limite:500, eurM:10, conv:2, color:"--fiber" },
   },
   converters: {},
@@ -766,9 +767,9 @@ function redrawCables(){
       el("circle",{cx:m(w.x),cy:m(w.y),r:15,fill:"transparent","data-cam":ci,"data-wp":wi,class:"wp",style:"cursor:grab"},gCables);
     });
     const cx=p.reduce((s,q)=>s+q.x,0)/p.length, cy=p.reduce((s,q)=>s+q.y,0)/p.length;
-    el("rect",{x:m(cx)-32,y:m(cy)-13,width:64,height:22,rx:4,fill:css("--bg"),stroke:col,"stroke-width":1,opacity:.92},gCables);
-    const t=el("text",{x:m(cx),y:m(cy)+3,fill:col,"font-size":14,"font-weight":"bold","text-anchor":"middle"},gCables);
-    t.textContent=len.toFixed(0)+" m";
+    el("rect",{x:m(cx)-46,y:m(cy)-13,width:92,height:22,rx:4,fill:css("--bg"),stroke:col,"stroke-width":1,opacity:.92},gCables);
+    const t=el("text",{x:m(cx),y:m(cy)+3,fill:col,"font-size":13,"font-weight":"bold","text-anchor":"middle"},gCables);
+    t.textContent=len.toFixed(0)+" m · "+cableTag(ct);
   });
   // insignias de conversores
   const badge=(pos,tag,bad)=>{
@@ -818,6 +819,8 @@ const resRank={hd:0,"4k":1};
 const camRes=ci=>cams[ci].res||"hd";
 function effRes(ci){ const nat=camRes(ci); return camDec[ci] ? (nat==="4k"?"hd":"4k") : nat; }   // el Decimator invierte la resolución
 const cableRes=ct=>ct.res||"hd";                          // resolución máxima que transporta el cable
+const CTAG={"HD-SDI":"HD","6G-SDI":"6G","12G-SDI":"12G","Fibra":"FIB","Ethernet":"ETH","HDMI":"HDMI"};
+const cableTag=ct=>CTAG[ct.nombre]||ct.nombre;            // etiqueta corta del cable, junto a los metros
 const mesaRes=()=>LEVEL.mesa.inRes||"hd";                  // resolución de la mesa (acepta hasta esa)
 function resProblem(ci,ct){                                // devuelve clave de problema de resolución, o null
   const er=effRes(ci);
