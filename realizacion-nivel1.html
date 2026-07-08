@@ -312,15 +312,15 @@ const TEATRO_N2 = {
 
 const TEATRO_N3 = {
   nombre:  { es:"Teatro · Nivel 3", en:"Theatre · Level 3" },
-  encargo: { es:"Producción grande y mixta: SDI, una mirrorless HDMI y una PTZ por IP. Las del frente necesitan FIBRA por distancia; coloca los conversores en el sentido correcto y cuadra un presupuesto justo.",
-             en:"Big mixed production: SDI, an HDMI mirrorless and an IP PTZ. The front ones need FIBRE due to distance; place the converters the right way round and meet a tight budget." },
+  encargo: { es:"Producción grande y mixta: SDI, una mirrorless HDMI y una PTZ por IP. La mesa trae una entrada IP (IN3): la PTZ entra por Ethernet directa. Las del frente necesitan FIBRA por distancia; ojo al sentido de los conversores y al presupuesto.",
+             en:"Big mixed production: SDI, an HDMI mirrorless and an IP PTZ. The desk has an IP input (IN3): the PTZ goes in over Ethernet directly. The front ones need FIBRE due to distance; mind converter direction and the budget." },
   planoM:  { w:150, h:80 },
   escalaPxM: 7,
-  mesa: { x:140, y:40, inputs:4, inFmt:"sdi", faces:"left" },
+  mesa: { x:140, y:40, inputs:["sdi","sdi","ip","sdi"], faces:"left" },   // la mesa trae una entrada IP
   cams: [
     { id:"CAM 1", x:27,  y:24, out:"sdi"  },   // frente → fibra
     { id:"CAM 2", x:27,  y:54, out:"hdmi" },   // frente, mirrorless → convertir + fibra
-    { id:"CAM 3", x:126, y:22, out:"ip"   },   // fondo, PTZ → IP/Ethernet + convertir
+    { id:"CAM 3", x:126, y:22, out:"ip"   },   // fondo, PTZ → Ethernet directo a la entrada IP
     { id:"CAM 4", x:126, y:56, out:"sdi"  },   // fondo → SDI
   ],
   zones: TEATRO_ZONAS_2,
@@ -538,16 +538,17 @@ function drawStatic(){
   sl.textContent="20 m";
 
   // mesa / cabina (faces "top"=entradas arriba; "left"=entradas a la izquierda, mirando a la sala)
-  const faces=LEVEL.mesa.faces||"top", nin=LEVEL.mesa.inputs;
-  const mw = faces==="left"?14:26, mh = faces==="left"?(nin*6+6):10;
+  const faces=LEVEL.mesa.faces||"top", nin=nInputs();
+  const mw = faces==="left"?16:26, mh = faces==="left"?(nin*6+6):10;
   el("rect",{x:m(LEVEL.mesa.x-mw/2),y:m(LEVEL.mesa.y-mh/2),width:m(mw),height:m(mh),fill:css("--panel"),stroke:css("--line"),"stroke-width":1.5,rx:3},gStatic);
   const ml=el("text",{x:m(LEVEL.mesa.x+(faces==="left"?2:0)),y:m(LEVEL.mesa.y)+3,fill:css("--dim"),"font-size":8,"letter-spacing":"1","text-anchor":"middle"},gStatic);
   ml.textContent=tl(LEVEL.mesa.label||"CABINA");
   inputs.forEach((p,i)=>{
-    el("circle",{cx:m(p.x),cy:m(p.y),r:8,fill:css("--bg"),stroke:css("--dim"),"stroke-width":1.5,"data-in":i,class:"inport"},gPorts);
+    const fc=fmtColor(inFmtOf(i));
+    el("circle",{cx:m(p.x),cy:m(p.y),r:8,fill:css("--bg"),stroke:fc,"stroke-width":1.8,"data-in":i,class:"inport"},gPorts);
     const lx=faces==="left"?m(p.x)+13:m(p.x), ly=faces==="left"?m(p.y)+3:m(p.y)-13, an=faces==="left"?"start":"middle";
-    const t=el("text",{x:lx,y:ly,fill:css("--dim"),"font-size":9,"text-anchor":an},gStatic);
-    t.textContent="IN"+(i+1);
+    const t=el("text",{x:lx,y:ly,fill:fc,"font-size":9,"text-anchor":an},gStatic);
+    t.textContent="IN"+(i+1)+"·"+String(inFmtOf(i)).toUpperCase();
   });
 
   // cámaras (símbolo de plano: cuerpo + triángulo de visión hacia el escenario, a la izquierda)
@@ -644,7 +645,7 @@ function redrawCables(){
     const t=el("text",{x:m(pos.x)+24,y:m(pos.y)-10,fill:c,"font-size":10,"font-weight":"bold","text-anchor":"middle"},gCables); t.textContent=tag;
   };
   camConv.forEach((k,ci)=>{ if(k){const cv=LEVEL.converters[k]; badge(cams[ci].port, cv.tag, cv.from!==cams[ci].out);} });
-  inConv.forEach((k,j)=>{ if(k){const cv=LEVEL.converters[k]; badge(inputs[j], cv.tag, cv.to!==LEVEL.mesa.inFmt);} });
+  inConv.forEach((k,j)=>{ if(k){const cv=LEVEL.converters[k]; badge(inputs[j], cv.tag, cv.to!==inFmtOf(j));} });
   // cámaras inalámbricas: enlace RF + receptor RX (con su puerto de salida)
   cams.forEach((cam,ci)=>{
     if(!cam.wireless || !rx[ci]) return;
@@ -667,9 +668,13 @@ function effOut(ci){
   const k=camConv[ci]; if(!k) return cam.out;
   const cv=LEVEL.converters[k]; return cv.from===cam.out ? cv.to : null;
 }
+const nInputs=()=> Array.isArray(LEVEL.mesa.inputs) ? LEVEL.mesa.inputs.length : LEVEL.mesa.inputs;
+const inFmtOf=j=> Array.isArray(LEVEL.mesa.inputs) ? LEVEL.mesa.inputs[j] : LEVEL.mesa.inFmt;   // formato nativo de la entrada j
+const fmtColor=f=> f==="sdi"?css("--cyan") : f==="hdmi"?css("--amber") : f==="ip"?css("--eth") : css("--dim");
 function effIn(j){
-  const k=inConv[j]; if(!k) return LEVEL.mesa.inFmt;
-  const cv=LEVEL.converters[k]; return cv.to===LEVEL.mesa.inFmt ? cv.from : null;
+  const base=inFmtOf(j);
+  const k=inConv[j]; if(!k) return base;
+  const cv=LEVEL.converters[k]; return cv.to===base ? cv.from : null;   // el conversor debe entregar el formato de la entrada
 }
 
 /* ============================================================
@@ -833,7 +838,7 @@ function validate(){
     const cvc=camConv[ci]&&LEVEL.converters[camConv[ci]];
     if(cvc && cvc.from!==cams[ci].out) problemas.push(tr('m_convcam')(name, cvc.nombre, cvc.from.toUpperCase(), cams[ci].out.toUpperCase()));
     const cvi=inConv[c.input]&&LEVEL.converters[inConv[c.input]];
-    if(cvi && cvi.to!==LEVEL.mesa.inFmt) problemas.push(tr('m_convin')(name, cvi.nombre, cvi.to.toUpperCase(), LEVEL.mesa.inFmt.toUpperCase()));
+    if(cvi && cvi.to!==inFmtOf(c.input)) problemas.push(tr('m_convin')(name, cvi.nombre, cvi.to.toUpperCase(), inFmtOf(c.input).toUpperCase()));
     const eo=effOut(ci), ei=effIn(c.input);
     if(eo && ei){
       if(ct.signal!==eo) problemas.push(tr('m_fmtcam')(name, eo.toUpperCase(), ct.signal.toUpperCase()));
@@ -932,7 +937,7 @@ function cargarNivel(vid,idx){
   S=LEVEL.escalaPxM;
   VBW=m(LEVEL.planoM.w); VBH=m(LEVEL.planoM.h);
   svg.setAttribute("viewBox",`0 0 ${VBW} ${VBH}`);
-  inputs=[]; { const n=LEVEL.mesa.inputs, faces=LEVEL.mesa.faces||"top";
+  inputs=[]; { const n=nInputs(), faces=LEVEL.mesa.faces||"top";
     for(let i=0;i<n;i++) inputs.push(faces==="left"
       ? {x:LEVEL.mesa.x-8, y:LEVEL.mesa.y+(i-(n-1)/2)*6}
       : {x:LEVEL.mesa.x+(i-(n-1)/2)*6, y:LEVEL.mesa.y-4}); }
