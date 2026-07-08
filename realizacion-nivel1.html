@@ -407,8 +407,66 @@ const CONCIERTO_N2 = {
 
 const SETTV_N1 = {
   nombre:  { es:"Set de TV · Nivel 1", en:"TV Set · Level 1" },
-  encargo: { es:"Plató: el decorado y la mesa están arriba; las cámaras, abajo, apuntando al set. El control está en SALA APARTE — lleva cada cámara al patch de pared (a la derecha). Estudio pequeño: SDI de sobra (los focos de suelo no estorban al cable).",
-             en:"Studio: the set and desk are at the top; the cameras below, aiming at the set. The gallery is in a SEPARATE ROOM — take each camera to the wall patch (on the right). Small studio: SDI is plenty (floor lights don't get in the cable's way)." },
+  encargo: { es:"Plató pequeño con mezclador tipo ATEM: la mesa tiene SOLO entradas HDMI. Las mirrorless entran por HDMI directo (tramo corto, ≤15 m). La CAM 3 es SDI: conviértela a HDMI para entrar.",
+             en:"Small studio with an ATEM-style switcher: the desk has HDMI inputs ONLY. The mirrorless cameras go in over HDMI directly (short run, ≤15 m). CAM 3 is SDI: convert it to HDMI to get in." },
+  planoM:  { w:72, h:52 },
+  escalaPxM: 14,
+  mesa: { x:36, y:44, inputs:["hdmi","hdmi","hdmi"], faces:"top", label:"CONTROL" },
+  cams: [
+    { id:"CAM 1", x:24, y:30, out:"hdmi", dir:"up" },
+    { id:"CAM 2", x:36, y:30, out:"hdmi", dir:"up" },
+    { id:"CAM 3", x:48, y:30, out:"sdi",  dir:"up" },
+  ],
+  zones: [
+    { shape:"rect", kind:"stage",   x:36, y:9,  w:56, h:8, label:"DECORADO / SET" },
+    { shape:"rect", kind:"seating", x:36, y:20, w:24, h:6, label:"MESA PLATÓ" },
+  ],
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    hdmi: { nombre:"HDMI",   signal:"hdmi", limite:15,  eurM:1.5, conv:0, color:"--amber" },
+    sdi:  { nombre:"HD-SDI", signal:"sdi",  limite:100, eurM:3,   conv:0, color:"--cyan"  },
+  },
+  converters: {
+    sdi_hdmi: { nombre:"SDI→HDMI", tag:"S→H", from:"sdi",  to:"hdmi", eur:150 },
+    hdmi_sdi: { nombre:"HDMI→SDI", tag:"H→S", from:"hdmi", to:"sdi",  eur:180 },
+  },
+  convEur: 250,
+  budget: 500,
+};
+
+const SETTV_N2 = {
+  nombre:  { es:"Set de TV · Nivel 2", en:"TV Set · Level 2" },
+  encargo: { es:"Plató con mesa mixta: una entrada HDMI (IN1) y dos SDI (IN2, IN3). La mirrorless entra por su HDMI; las de cine, por SDI. Sigue siendo estudio pequeño (tiradas cortas).",
+             en:"Studio with a mixed desk: one HDMI input (IN1) and two SDI (IN2, IN3). The mirrorless goes in via HDMI; the cine cameras via SDI. Still a small studio (short runs)." },
+  planoM:  { w:80, h:56 },
+  escalaPxM: 12.5,
+  mesa: { x:40, y:48, inputs:["hdmi","sdi","sdi"], faces:"top", label:"CONTROL" },
+  cams: [
+    { id:"CAM 1", x:30, y:32, out:"hdmi", dir:"up" },
+    { id:"CAM 2", x:40, y:32, out:"sdi",  dir:"up" },
+    { id:"CAM 3", x:50, y:32, out:"sdi",  dir:"up" },
+  ],
+  zones: [
+    { shape:"rect", kind:"stage",   x:40, y:10, w:60, h:8, label:"DECORADO / SET" },
+    { shape:"rect", kind:"seating", x:40, y:22, w:26, h:6, label:"MESA PLATÓ" },
+  ],
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    hdmi: { nombre:"HDMI",   signal:"hdmi", limite:15,  eurM:1.5, conv:0, color:"--amber" },
+    sdi:  { nombre:"HD-SDI", signal:"sdi",  limite:100, eurM:3,   conv:0, color:"--cyan"  },
+  },
+  converters: {
+    sdi_hdmi: { nombre:"SDI→HDMI", tag:"S→H", from:"sdi",  to:"hdmi", eur:150 },
+    hdmi_sdi: { nombre:"HDMI→SDI", tag:"H→S", from:"hdmi", to:"sdi",  eur:180 },
+  },
+  convEur: 250,
+  budget: 700,
+};
+
+const SETTV_N3 = {
+  nombre:  { es:"Set de TV · Nivel 3", en:"TV Set · Level 3" },
+  encargo: { es:"Plató mayor con mesa SDI y control en SALA APARTE: decorado y mesa arriba, cámaras abajo apuntando al set. Lleva cada cámara al patch de pared (a la derecha); los focos de suelo no estorban al cable.",
+             en:"Larger studio with an SDI desk and the gallery in a SEPARATE ROOM: set and desk at the top, cameras below aiming at the set. Take each camera to the wall patch (on the right); floor lights don't get in the cable's way." },
   planoM:  { w:92, h:66 },
   escalaPxM: 10.5,
   mesa: { x:82, y:30, inputs:3, inFmt:"sdi", faces:"left", label:"CONTROL" },
@@ -433,13 +491,47 @@ const SETTV_N1 = {
   budget: 1800,
 };
 
+const CONCIERTO_N3 = {
+  nombre:  { es:"Concierto · Nivel 3", en:"Concert · Level 3" },
+  encargo: { es:"Arena enorme: distancias descomunales. Las cámaras del foso solo llegan por FIBRA; las de fondo, por SDI. Y una grúa inalámbrica en pista: coloca su RX dentro del alcance. Presupuesto grande, pero ojo.",
+             en:"Huge arena: massive distances. The pit cameras only reach on FIBRE; the rear ones on SDI. Plus a wireless jib on the floor: place its RX within range. Big budget, but be careful." },
+  planoM:  { w:210, h:120 },
+  escalaPxM: 5.2,
+  mesa: { x:198, y:60, inputs:5, inFmt:"sdi", faces:"left" },
+  cams: [
+    { id:"CAM 1", x:38,  y:30, out:"sdi" },   // foso → fibra
+    { id:"CAM 2", x:38,  y:90, out:"sdi" },   // foso → fibra
+    { id:"CAM 3", x:186, y:30, out:"sdi" },   // fondo → SDI
+    { id:"CAM 4", x:186, y:90, out:"sdi" },   // fondo → SDI
+    { id:"CAM 5", x:64,  y:60, out:"sdi", wireless:true, rxFmt:"sdi", range:135, txEur:800 },  // grúa inalámbrica
+  ],
+  zones: [
+    { shape:"rect",   kind:"stage",   x:16,  y:60, w:24,  h:104, label:"ESCENARIO" },
+    { shape:"rect",   kind:"pit",     x:30,  y:60, w:4,   h:100, label:"BARRERA" },
+    { shape:"rect",   kind:"seating", x:114, y:60, w:138, h:100, label:"PÚBLICO (DE PIE)" },
+    { shape:"circle", kind:"column",  x:75,  y:6,   r:4, label:"TORRE PA" },
+    { shape:"circle", kind:"column",  x:75,  y:114, r:4, label:"TORRE PA" },
+    { shape:"circle", kind:"column",  x:150, y:6,   r:4, label:"TORRE PA" },
+    { shape:"circle", kind:"column",  x:150, y:114, r:4, label:"TORRE PA" },
+    { shape:"rect",   kind:"walk",    x:186, y:60, w:6,   h:104, label:"PASILLO" },
+  ],
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    sdi:   { nombre:"HD-SDI", signal:"sdi", limite:100, eurM:3,  conv:0, color:"--cyan"  },
+    fibra: { nombre:"Fibra",  signal:"sdi", limite:500, eurM:10, conv:2, color:"--fiber" },
+  },
+  converters: {},
+  convEur: 250,
+  budget: 5800,
+};
+
 const GAME = {
   teatro:    { sub:{ es:"Empiezas con SDI y HDMI en un teatro pequeño. Al subir de nivel el recinto crece: aparece la fibra (SDI no llega) y luego los formatos mixtos (IP).",
                      en:"Start with SDI and HDMI in a small theatre. As levels go up the venue grows: fibre appears (SDI won't reach) and then mixed formats (IP)." }, niveles:[ TEATRO_N1, TEATRO_N2, TEATRO_N3 ] },
   concierto: { sub:{ es:"Grandes distancias (fibra), público de pie enorme, torres de PA. Escenario a la izquierda.",
-                     en:"Long distances (fibre), huge standing crowd, PA towers. Stage on the left." }, niveles:[ CONCIERTO_N1, CONCIERTO_N2 ] },
+                     en:"Long distances (fibre), huge standing crowd, PA towers. Stage on the left." }, niveles:[ CONCIERTO_N1, CONCIERTO_N2, CONCIERTO_N3 ] },
   setTV:     { sub:{ es:"Decorado y mesa arriba, cámaras abajo apuntando al set. Control en sala aparte (patch de pared).",
-                     en:"Set and desk at the top, cameras below aiming at the set. Gallery in a separate room (wall patch)." }, niveles:[ SETTV_N1 ] },
+                     en:"Set and desk at the top, cameras below aiming at the set. Gallery in a separate room (wall patch)." }, niveles:[ SETTV_N1, SETTV_N2, SETTV_N3 ] },
 };
 
 /* ============================================================
