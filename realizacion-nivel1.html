@@ -15,6 +15,9 @@
   html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--mono);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   #app{display:flex;height:100%;gap:1px;background:var(--line)}
   button{font-family:var(--mono);cursor:pointer}
+  .lang{display:inline-flex;border:1px solid var(--line);border-radius:5px;overflow:hidden;flex:0 0 auto}
+  .langbtn{background:transparent;color:var(--dim);border:0;padding:6px 9px;font-size:10px;letter-spacing:.1em}
+  .langbtn.on{background:var(--cyan);color:var(--bg)}
 
   /* ---- panel lateral ---- */
   #side{width:290px;min-width:290px;background:var(--panel);padding:22px 20px;display:flex;flex-direction:column;gap:20px;overflow-y:auto}
@@ -86,44 +89,47 @@
   <aside id="side">
     <div class="head">
       <div>
-        <div class="eyebrow">CIFP TARTANGA · REALIZACIÓN</div>
+        <div class="eyebrow" data-i18n="eyebrow">CIFP TARTANGA · REALIZACIÓN</div>
         <h1 id="nivel">—</h1>
       </div>
-      <button id="tomenu" title="Elegir evento">≡</button>
+      <div style="display:flex;gap:6px;align-items:flex-start">
+        <span class="lang"><button class="langbtn" data-lang="es">ES</button><button class="langbtn" data-lang="en">EN</button></span>
+        <button id="tomenu" title="Menu">≡</button>
+      </div>
     </div>
     <p class="encargo" id="encargo"></p>
 
     <div class="block">
-      <h2>Inventario · tipo de cable</h2>
+      <h2 data-i18n="inv_cable">Inventario · tipo de cable</h2>
       <div class="inv" id="inv"></div>
     </div>
 
     <div class="block" id="convBlock">
-      <h2>Conversores</h2>
+      <h2 data-i18n="inv_conv">Conversores</h2>
       <div class="inv" id="convs"></div>
     </div>
 
     <div class="block" id="elemBlock">
-      <h2>Elementos</h2>
+      <h2 data-i18n="inv_elem">Elementos</h2>
       <div class="inv" id="elems"></div>
     </div>
 
     <div class="block">
-      <h2>Estado</h2>
-      <div class="stat"><span class="lbl">Cámaras conectadas</span><span class="val" id="s-conn">0 / 0</span></div>
-      <div class="stat"><span class="lbl">Metraje total</span><span class="val" id="s-total">0 m</span></div>
-      <div class="stat"><span class="lbl">Conversores</span><span class="val" id="s-conv">0</span></div>
-      <div class="stat"><span class="lbl">Pasacables</span><span class="val" id="s-ramps">0</span></div>
-      <div class="stat"><span class="lbl">Presupuesto</span><span class="val" id="s-budget">—</span></div>
+      <h2 data-i18n="status">Estado</h2>
+      <div class="stat"><span class="lbl" data-i18n="st_conn">Cámaras conectadas</span><span class="val" id="s-conn">0 / 0</span></div>
+      <div class="stat"><span class="lbl" data-i18n="st_total">Metraje total</span><span class="val" id="s-total">0 m</span></div>
+      <div class="stat"><span class="lbl" data-i18n="st_conv">Conversores</span><span class="val" id="s-conv">0</span></div>
+      <div class="stat"><span class="lbl" data-i18n="st_ramps">Pasacables</span><span class="val" id="s-ramps">0</span></div>
+      <div class="stat"><span class="lbl" data-i18n="st_budget">Presupuesto</span><span class="val" id="s-budget">—</span></div>
     </div>
 
     <div class="block">
-      <h2>Cómo se juega</h2>
-      <p class="hint">Elige el <b style="color:var(--txt)">tipo de cable</b> y arrastra desde el <b style="color:var(--txt)">objetivo</b> de la cámara a una <b style="color:var(--txt)">entrada</b> de la mesa. <b style="color:var(--txt)">Tira del cable</b> para curvarlo (suma metros); rodea las butacas (los pasillos se cruzan libres). Si el nivel trae conversores, colócalos tocando cámara o entrada — ojo al sentido. El juego <b style="color:var(--txt)">no te avisa</b> si algo no encaja: pulsa <b style="color:var(--txt)">Ya lo tengo</b> para validar. Pellizca para acercar.</p>
+      <h2 data-i18n="howto">Cómo se juega</h2>
+      <p class="hint" id="hint"></p>
     </div>
 
-    <button id="validate">Ya lo tengo · Validar</button>
-    <button id="reset">Reiniciar plano</button>
+    <button id="validate" data-i18n="btn_validate">Ya lo tengo · Validar</button>
+    <button id="reset" data-i18n="btn_reset">Reiniciar plano</button>
   </aside>
 
   <main id="stage">
@@ -133,29 +139,103 @@
       <h3 id="win-h">—</h3>
       <div class="res" id="win-res"></div>
       <div class="btns">
-        <button id="win-again">Reintentar</button>
-        <button id="win-review" class="ghost">Revisar plano</button>
+        <button id="win-again" data-i18n="btn_retry">Reintentar</button>
+        <button id="win-review" class="ghost" data-i18n="btn_review">Revisar plano</button>
       </div>
     </div>
   </main>
 </div>
 
 <div id="menu" class="show">
-  <div class="eyebrow">CIFP TARTANGA · REALIZACIÓN</div>
-  <div class="menu-title">Elige un tipo de evento</div>
-  <div class="menu-sub">Cada recinto sube de dificultad en sus niveles.</div>
+  <span class="lang" style="position:absolute;top:22px;right:24px"><button class="langbtn" data-lang="es">ES</button><button class="langbtn" data-lang="en">EN</button></span>
+  <div class="eyebrow" data-i18n="eyebrow">CIFP TARTANGA · REALIZACIÓN</div>
+  <div class="menu-title" data-i18n="menu_title">Elige un tipo de evento</div>
+  <div class="menu-sub" data-i18n="menu_sub">Cada recinto sube de dificultad en sus niveles.</div>
   <div class="venues" id="venues"></div>
 </div>
 
 <script>
 "use strict";
 /* ============================================================
+   IDIOMAS (i18n) — es / en (eu se añadirá después)
+   ============================================================ */
+let LANG = localStorage.getItem("realiz_lang") || "en";
+const STR = {
+  es:{
+    eyebrow:"CIFP TARTANGA · REALIZACIÓN",
+    inv_cable:"Inventario · tipo de cable", inv_conv:"Conversores", inv_elem:"Elementos",
+    status:"Estado", st_conn:"Cámaras conectadas", st_total:"Metraje total", st_conv:"Conversores",
+    st_ramps:"Pasacables", st_budget:"Presupuesto", howto:"Cómo se juega",
+    btn_validate:"Ya lo tengo · Validar", btn_reset:"Reiniciar plano", btn_retry:"Reintentar", btn_review:"Revisar plano",
+    menu_title:"Elige un tipo de evento", menu_sub:"Cada recinto sube de dificultad en sus niveles.", soon:"Próximamente",
+    result:"RESULTADO", valid_k:"INSTALACIÓN VÁLIDA", invalid_k:"REVISA LA INSTALACIÓN",
+    valid_h:"Señal en la mesa ✓", invalid_h:"Hay fallos que corregir",
+    ramp_name:"Pasacables", rx_name:"Receptor (RX)",
+    meta_conv:"€ · toca cámara o entrada", meta_ramp:"€ · toca un pasillo (lo comparten varias cámaras)", meta_rx:"toca cerca de la cámara inalámbrica (dentro del alcance RF)",
+    hint:`Elige el <b>tipo de cable</b> y arrastra desde el <b>objetivo</b> de la cámara a una <b>entrada</b> de la mesa. <b>Tira del cable</b> para curvarlo (suma metros); rodea las butacas (los pasillos se cruzan libres). Si el nivel trae conversores, colócalos tocando cámara o entrada — ojo al sentido. El juego <b>no te avisa</b> si algo no encaja: pulsa <b>Ya lo tengo</b> para validar. Pellizca para acercar.`,
+    m_notconn:n=>`${n}: sin conectar a la mesa.`,
+    m_hard:n=>`${n}: el cable cruza las butacas, el foso u otro obstáculo.`,
+    m_aisle:n=>`${n}: el cable cruza un pasillo sin pasacables (cable pisable).`,
+    m_len:(n,l,c,lim)=>`${n}: ${l} m con ${c} supera su límite de ${lim} m.`,
+    m_convcam:(n,cv,f,o)=>`${n}: el conversor ${cv} espera ${f}, pero la cámara saca ${o} — sentido equivocado.`,
+    m_convin:(n,cv,to,mf)=>`${n}: el conversor ${cv} de la entrada saca ${to}, pero la mesa necesita ${mf} — sentido equivocado.`,
+    m_fmtcam:(n,eo,s)=>`${n}: la cámara entrega ${eo} y el cable es ${s}: no encajan.`,
+    m_fmtin:(n,c,s,ei)=>`${n}: el cable ${c} (${s}) no entra en la mesa, que espera ${ei}.`,
+    m_budget:(c,b)=>`Presupuesto: ${c} € superan el tope de ${b} €.`,
+    m_norx:n=>`${n}: sin receptor (RX) colocado.`,
+    m_range:(n,d,r)=>`${n}: el receptor está a ${d} m, fuera del alcance RF (${r} m).`,
+    w_ok:n=>`Las ${n} cámaras entregan señal dentro de presupuesto.`,
+    w_cost:(c,tt,cv)=>`Coste: <b style="color:var(--txt)">${c} €</b> · ${tt} m · ${cv} conversores.`,
+    w_score:s=>`Puntuación (presupuesto restante): <b style="color:var(--txt)">${s} €</b>.`,
+    labels:{ "ESCENARIO":"ESCENARIO","FOSO":"FOSO","BUTACAS":"BUTACAS","PASILLO CENTRAL":"PASILLO CENTRAL","PASILLO":"PASILLO","COLUMNA":"COLUMNA","TORRE PA":"TORRE PA","BARRERA":"BARRERA","PÚBLICO (DE PIE)":"PÚBLICO (DE PIE)","DECORADO / SET":"DECORADO / SET","MESA PLATÓ":"MESA PLATÓ","FOCO":"FOCO","CABINA":"CABINA","CONTROL":"CONTROL" },
+    cables:{ "Fibra":"Fibra" },
+    venues:{ teatro:"Teatro", concierto:"Concierto", setTV:"Set de TV" },
+  },
+  en:{
+    eyebrow:"CIFP TARTANGA · TV DIRECTING",
+    inv_cable:"Inventory · cable type", inv_conv:"Converters", inv_elem:"Devices",
+    status:"Status", st_conn:"Cameras connected", st_total:"Total cable", st_conv:"Converters",
+    st_ramps:"Cable ramps", st_budget:"Budget", howto:"How to play",
+    btn_validate:"I'm done · Validate", btn_reset:"Reset plan", btn_retry:"Retry", btn_review:"Review plan",
+    menu_title:"Choose an event type", menu_sub:"Each venue ramps up difficulty across its levels.", soon:"Coming soon",
+    result:"RESULT", valid_k:"INSTALLATION VALID", invalid_k:"REVIEW THE INSTALLATION",
+    valid_h:"Signal at the desk ✓", invalid_h:"Issues to fix",
+    ramp_name:"Cable ramp", rx_name:"Receiver (RX)",
+    meta_conv:"€ · tap a camera or input", meta_ramp:"€ · tap an aisle (shared by cameras)", meta_rx:"tap near the wireless camera (within RF range)",
+    hint:`Pick a <b>cable type</b> and drag from the camera's <b>output</b> to a desk <b>input</b>. <b>Pull the cable</b> to bend it (adds metres); route around the seating (aisles are free to cross). If the level has converters, place them by tapping a camera or input — mind the direction. The game <b>won't warn you</b> if something doesn't fit: press <b>I'm done</b> to validate. Pinch to zoom.`,
+    m_notconn:n=>`${n}: not connected to the desk.`,
+    m_hard:n=>`${n}: the cable crosses the seating, the pit or another obstacle.`,
+    m_aisle:n=>`${n}: the cable crosses an aisle with no cable ramp (trip hazard).`,
+    m_len:(n,l,c,lim)=>`${n}: ${l} m of ${c} exceeds its ${lim} m limit.`,
+    m_convcam:(n,cv,f,o)=>`${n}: the ${cv} converter expects ${f}, but the camera outputs ${o} — wrong direction.`,
+    m_convin:(n,cv,to,mf)=>`${n}: the ${cv} converter at the input outputs ${to}, but the desk needs ${mf} — wrong direction.`,
+    m_fmtcam:(n,eo,s)=>`${n}: the camera delivers ${eo} and the cable is ${s}: they don't match.`,
+    m_fmtin:(n,c,s,ei)=>`${n}: the ${c} cable (${s}) doesn't fit the desk, which expects ${ei}.`,
+    m_budget:(c,b)=>`Budget: ${c} € exceeds the ${b} € cap.`,
+    m_norx:n=>`${n}: no receiver (RX) placed.`,
+    m_range:(n,d,r)=>`${n}: the receiver is ${d} m away, out of RF range (${r} m).`,
+    w_ok:n=>`All ${n} cameras deliver signal within budget.`,
+    w_cost:(c,tt,cv)=>`Cost: <b style="color:var(--txt)">${c} €</b> · ${tt} m · ${cv} converters.`,
+    w_score:s=>`Score (budget left): <b style="color:var(--txt)">${s} €</b>.`,
+    labels:{ "ESCENARIO":"STAGE","FOSO":"PIT","BUTACAS":"SEATING","PASILLO CENTRAL":"CENTER AISLE","PASILLO":"AISLE","COLUMNA":"COLUMN","TORRE PA":"PA TOWER","BARRERA":"BARRIER","PÚBLICO (DE PIE)":"STANDING CROWD","DECORADO / SET":"SET","MESA PLATÓ":"PRESENTER DESK","FOCO":"FLOOR LIGHT","CABINA":"BOOTH","CONTROL":"CONTROL ROOM" },
+    cables:{ "Fibra":"Fiber" },
+    venues:{ teatro:"Theatre", concierto:"Concert", setTV:"TV Set" },
+  },
+};
+const tr=k=>{ const s=STR[LANG]||STR.en; return (s[k]!==undefined?s[k]:STR.en[k]); };
+const tl=lbl=>{ const s=STR[LANG]||STR.en; return (s.labels&&s.labels[lbl])||lbl; };   // etiqueta de zona
+const tcable=nm=>{ const s=STR[LANG]||STR.en; return (s.cables&&s.cables[nm])||nm; };   // nombre de cable
+const tvenue=v=>{ const s=STR[LANG]||STR.en; return (s.venues&&s.venues[v])||v; };
+const pick=o=> (o&&typeof o==="object") ? (o[LANG]||o.en||o.es) : o;                    // campo multilingüe {es,en}
+
+/* ============================================================
    NIVELES — todo en METROS. Un "evento" es una lista de niveles.
    Cada nivel declara su plano, zonas, cámaras, inventario y presupuesto.
    ============================================================ */
 const TEATRO_N1 = {
-  nombre:  "Teatro · Nivel 1",
-  encargo: "Teatro pequeño. Lleva las 3 cámaras a la cabina. La CAM 2 es una mirrorless con salida HDMI (tramo corto): conviértela a SDI para llegar. Con SDI tienes de sobra — aquí aún no hace falta fibra.",
+  nombre:  { es:"Teatro · Nivel 1", en:"Theatre · Level 1" },
+  encargo: { es:"Teatro pequeño. Lleva las 3 cámaras a la cabina. La CAM 2 es una mirrorless con salida HDMI (tramo corto): conviértela a SDI para llegar. Con SDI tienes de sobra — aquí aún no hace falta fibra.",
+             en:"Small theatre. Get the 3 cameras to the booth. CAM 2 is a mirrorless with HDMI output (short reach): convert it to SDI to make it. SDI is plenty here — no fibre needed yet." },
   planoM:  { w:110, h:66 },
   escalaPxM: 10.5,
   mesa: { x:95, y:33, inputs:3, inFmt:"sdi", faces:"left" },   // cabina compacta a la derecha, entradas mirando a la sala
@@ -203,8 +283,9 @@ const TEATRO_CABLES = {
 };
 
 const TEATRO_N2 = {
-  nombre:  "Teatro · Nivel 2",
-  encargo: "Teatro grande: la cabina queda lejos. Las cámaras del frente pasan de 100 m, así que ahí necesitas FIBRA; las de fondo llegan con SDI. La CAM 4 es HDMI (conviértela). Cuadra el presupuesto.",
+  nombre:  { es:"Teatro · Nivel 2", en:"Theatre · Level 2" },
+  encargo: { es:"Teatro grande: la cabina queda lejos. Las cámaras del frente pasan de 100 m, así que ahí necesitas FIBRA; las de fondo llegan con SDI. La CAM 4 es HDMI (conviértela). Cuadra el presupuesto.",
+             en:"Big theatre: the booth is far. The front cameras exceed 100 m, so they need FIBRE there; the rear ones make it on SDI. CAM 4 is HDMI (convert it). Stay within budget." },
   planoM:  { w:150, h:80 },
   escalaPxM: 7,
   mesa: { x:140, y:40, inputs:4, inFmt:"sdi", faces:"left" },
@@ -230,8 +311,9 @@ const TEATRO_N2 = {
 };
 
 const TEATRO_N3 = {
-  nombre:  "Teatro · Nivel 3",
-  encargo: "Producción grande y mixta: SDI, una mirrorless HDMI y una PTZ por IP. Las del frente necesitan FIBRA por distancia; coloca los conversores en el sentido correcto y cuadra un presupuesto justo.",
+  nombre:  { es:"Teatro · Nivel 3", en:"Theatre · Level 3" },
+  encargo: { es:"Producción grande y mixta: SDI, una mirrorless HDMI y una PTZ por IP. Las del frente necesitan FIBRA por distancia; coloca los conversores en el sentido correcto y cuadra un presupuesto justo.",
+             en:"Big mixed production: SDI, an HDMI mirrorless and an IP PTZ. The front ones need FIBRE due to distance; place the converters the right way round and meet a tight budget." },
   planoM:  { w:150, h:80 },
   escalaPxM: 7,
   mesa: { x:140, y:40, inputs:4, inFmt:"sdi", faces:"left" },
@@ -262,8 +344,9 @@ const TEATRO_N3 = {
 };
 
 const CONCIERTO_N1 = {
-  nombre:  "Concierto · Nivel 1",
-  encargo: "Gran recinto: las cámaras del foso están lejísimos de la cabina. Rodea el público (de pie) por los laterales, esquiva las torres de PA, y usa fibra en las tiradas largas (SDI solo aguanta 100 m). Cuadra el presupuesto.",
+  nombre:  { es:"Concierto · Nivel 1", en:"Concert · Level 1" },
+  encargo: { es:"Gran recinto: las cámaras del foso están lejísimos de la cabina. Rodea el público (de pie) por los laterales, esquiva las torres de PA, y usa fibra en las tiradas largas (SDI solo aguanta 100 m). Cuadra el presupuesto.",
+             en:"Large venue: the pit cameras are miles from the booth. Route around the standing crowd along the sides, avoid the PA towers, and use fibre on the long runs (SDI only holds 100 m). Stay within budget." },
   planoM:  { w:150, h:90 },
   escalaPxM: 7.5,
   mesa: { x:138, y:45, inputs:4, inFmt:"sdi", faces:"left" },
@@ -292,8 +375,9 @@ const CONCIERTO_N1 = {
 };
 
 const CONCIERTO_N2 = {
-  nombre:  "Concierto · Nivel 2",
-  encargo: "Entra una cámara inalámbrica (steadicam en el foso): no sale cable de ella. Coloca su receptor (RX) dentro del alcance RF y cablea desde el RX a la cabina. El resto de cámaras, como antes.",
+  nombre:  { es:"Concierto · Nivel 2", en:"Concert · Level 2" },
+  encargo: { es:"Entra una cámara inalámbrica (steadicam en el foso): no sale cable de ella. Coloca su receptor (RX) dentro del alcance RF y cablea desde el RX a la cabina. El resto de cámaras, como antes.",
+             en:"A wireless camera joins (steadicam in the pit): no cable comes off it. Place its receiver (RX) within RF range and cable from the RX to the booth. The rest of the cameras, as before." },
   planoM:  { w:150, h:90 },
   escalaPxM: 7.5,
   mesa: { x:138, y:45, inputs:4, inFmt:"sdi", faces:"left" },
@@ -322,8 +406,9 @@ const CONCIERTO_N2 = {
 };
 
 const SETTV_N1 = {
-  nombre:  "Set de TV · Nivel 1",
-  encargo: "Plató: el decorado y la mesa están arriba; las cámaras, abajo, apuntando al set. El control está en SALA APARTE — lleva cada cámara al patch de pared (a la derecha). Estudio pequeño: SDI de sobra (los focos de suelo no estorban al cable).",
+  nombre:  { es:"Set de TV · Nivel 1", en:"TV Set · Level 1" },
+  encargo: { es:"Plató: el decorado y la mesa están arriba; las cámaras, abajo, apuntando al set. El control está en SALA APARTE — lleva cada cámara al patch de pared (a la derecha). Estudio pequeño: SDI de sobra (los focos de suelo no estorban al cable).",
+             en:"Studio: the set and desk are at the top; the cameras below, aiming at the set. The gallery is in a SEPARATE ROOM — take each camera to the wall patch (on the right). Small studio: SDI is plenty (floor lights don't get in the cable's way)." },
   planoM:  { w:92, h:66 },
   escalaPxM: 10.5,
   mesa: { x:82, y:30, inputs:3, inFmt:"sdi", faces:"left", label:"CONTROL" },
@@ -349,9 +434,12 @@ const SETTV_N1 = {
 };
 
 const GAME = {
-  teatro:    { nombre:"Teatro",     sub:"Empiezas con SDI y HDMI en un teatro pequeño. Al subir de nivel el recinto crece: aparece la fibra (SDI no llega) y luego los formatos mixtos (IP).", niveles:[ TEATRO_N1, TEATRO_N2, TEATRO_N3 ] },
-  concierto: { nombre:"Concierto",  sub:"Grandes distancias (fibra), público de pie enorme, torres de PA. Escenario a la izquierda.", niveles:[ CONCIERTO_N1, CONCIERTO_N2 ] },
-  setTV:     { nombre:"Set de TV",  sub:"Decorado y mesa arriba, cámaras abajo apuntando al set. Control en sala aparte (patch de pared).", niveles:[ SETTV_N1 ] },
+  teatro:    { sub:{ es:"Empiezas con SDI y HDMI en un teatro pequeño. Al subir de nivel el recinto crece: aparece la fibra (SDI no llega) y luego los formatos mixtos (IP).",
+                     en:"Start with SDI and HDMI in a small theatre. As levels go up the venue grows: fibre appears (SDI won't reach) and then mixed formats (IP)." }, niveles:[ TEATRO_N1, TEATRO_N2, TEATRO_N3 ] },
+  concierto: { sub:{ es:"Grandes distancias (fibra), público de pie enorme, torres de PA. Escenario a la izquierda.",
+                     en:"Long distances (fibre), huge standing crowd, PA towers. Stage on the left." }, niveles:[ CONCIERTO_N1, CONCIERTO_N2 ] },
+  setTV:     { sub:{ es:"Decorado y mesa arriba, cámaras abajo apuntando al set. Control en sala aparte (patch de pared).",
+                     en:"Set and desk at the top, cameras below aiming at the set. Gallery in a separate room (wall patch)." }, niveles:[ SETTV_N1 ] },
 };
 
 /* ============================================================
@@ -426,7 +514,7 @@ function drawStatic(){
     if(z.shape==="circle"){
       el("circle",{cx:m(z.x),cy:m(z.y),r:m(z.r),fill:css("--line"),stroke:css("--dim"),"stroke-width":1.5},gStatic);
       el("circle",{cx:m(z.x),cy:m(z.y),r:m(z.r)*0.45,fill:"none",stroke:css("--dim"),"stroke-width":1},gStatic);
-      if(z.label){ const t=el("text",{x:m(z.x),y:m(z.y+z.r)+13,fill:css("--dim"),"font-size":8.5,"letter-spacing":"1","text-anchor":"middle"},gStatic); t.textContent=z.label; }
+      if(z.label){ const t=el("text",{x:m(z.x),y:m(z.y+z.r)+13,fill:css("--dim"),"font-size":8.5,"letter-spacing":"1","text-anchor":"middle"},gStatic); t.textContent=tl(z.label); }
       return;
     }
     let fill="rgba(92,107,103,.12)", stroke=css("--dim"), dash=null, lbl=css("--dim");
@@ -437,7 +525,7 @@ function drawStatic(){
     el("rect",a,gStatic);
     if(z.label){
       const t=el("text",{x:m(z.x),y:m(z.y)+3,fill:lbl,"font-size":11,"letter-spacing":"2","text-anchor":"middle"},gStatic);
-      t.textContent=z.label;
+      t.textContent=tl(z.label);
     }
   });
 
@@ -454,7 +542,7 @@ function drawStatic(){
   const mw = faces==="left"?14:26, mh = faces==="left"?(nin*6+6):10;
   el("rect",{x:m(LEVEL.mesa.x-mw/2),y:m(LEVEL.mesa.y-mh/2),width:m(mw),height:m(mh),fill:css("--panel"),stroke:css("--line"),"stroke-width":1.5,rx:3},gStatic);
   const ml=el("text",{x:m(LEVEL.mesa.x+(faces==="left"?2:0)),y:m(LEVEL.mesa.y)+3,fill:css("--dim"),"font-size":8,"letter-spacing":"1","text-anchor":"middle"},gStatic);
-  ml.textContent=LEVEL.mesa.label||"CABINA";
+  ml.textContent=tl(LEVEL.mesa.label||"CABINA");
   inputs.forEach((p,i)=>{
     el("circle",{cx:m(p.x),cy:m(p.y),r:8,fill:css("--bg"),stroke:css("--dim"),"stroke-width":1.5,"data-in":i,class:"inport"},gPorts);
     const lx=faces==="left"?m(p.x)+13:m(p.x), ly=faces==="left"?m(p.y)+3:m(p.y)-13, an=faces==="left"?"start":"middle";
@@ -733,40 +821,40 @@ function validate(){
   cams.forEach((cam,ci)=>{
     const name=cam.id, c=cables[ci];
     if(cam.wireless){                                   // cámara inalámbrica: RX colocado y en alcance
-      if(!rx[ci]){ problemas.push(`${name}: sin receptor (RX) colocado.`); return; }
+      if(!rx[ci]){ problemas.push(tr('m_norx')(name)); return; }
       const dRF=dist(cam,rx[ci]);
-      if(dRF>cam.range) problemas.push(`${name}: el receptor está a ${dRF.toFixed(0)} m, fuera del alcance RF (${cam.range} m).`);
+      if(dRF>cam.range) problemas.push(tr('m_range')(name, dRF.toFixed(0), cam.range));
     }
-    if(!c){ problemas.push(`${name}: sin conectar a la mesa.`); return; }
+    if(!c){ problemas.push(tr('m_notconn')(name)); return; }
     const ct=LEVEL.cableTypes[c.type], len=pathLen(ci);
-    if(crossHard(ci)) problemas.push(`${name}: el cable cruza las butacas, el foso u otro obstáculo.`);
-    if(crossAisleBare(ci)) problemas.push(`${name}: el cable cruza un pasillo sin pasacables (cable pisable).`);
-    if(len>ct.limite) problemas.push(`${name}: ${len.toFixed(0)} m con ${ct.nombre} supera su límite de ${ct.limite} m.`);
+    if(crossHard(ci)) problemas.push(tr('m_hard')(name));
+    if(crossAisleBare(ci)) problemas.push(tr('m_aisle')(name));
+    if(len>ct.limite) problemas.push(tr('m_len')(name, len.toFixed(0), tcable(ct.nombre), ct.limite));
     const cvc=camConv[ci]&&LEVEL.converters[camConv[ci]];
-    if(cvc && cvc.from!==cams[ci].out) problemas.push(`${name}: el conversor ${cvc.nombre} espera ${cvc.from.toUpperCase()}, pero la cámara saca ${cams[ci].out.toUpperCase()} — sentido equivocado.`);
+    if(cvc && cvc.from!==cams[ci].out) problemas.push(tr('m_convcam')(name, cvc.nombre, cvc.from.toUpperCase(), cams[ci].out.toUpperCase()));
     const cvi=inConv[c.input]&&LEVEL.converters[inConv[c.input]];
-    if(cvi && cvi.to!==LEVEL.mesa.inFmt) problemas.push(`${name}: el conversor ${cvi.nombre} de la entrada saca ${cvi.to.toUpperCase()}, pero la mesa necesita ${LEVEL.mesa.inFmt.toUpperCase()} — sentido equivocado.`);
+    if(cvi && cvi.to!==LEVEL.mesa.inFmt) problemas.push(tr('m_convin')(name, cvi.nombre, cvi.to.toUpperCase(), LEVEL.mesa.inFmt.toUpperCase()));
     const eo=effOut(ci), ei=effIn(c.input);
     if(eo && ei){
-      if(ct.signal!==eo) problemas.push(`${name}: la cámara entrega ${eo.toUpperCase()} y el cable es ${ct.signal.toUpperCase()}: no encajan.`);
-      else if(ct.signal!==ei) problemas.push(`${name}: el cable ${ct.nombre} (${ct.signal.toUpperCase()}) no entra en la mesa, que espera ${ei.toUpperCase()}.`);
+      if(ct.signal!==eo) problemas.push(tr('m_fmtcam')(name, eo.toUpperCase(), ct.signal.toUpperCase()));
+      else if(ct.signal!==ei) problemas.push(tr('m_fmtin')(name, tcable(ct.nombre), ct.signal.toUpperCase(), ei.toUpperCase()));
     }
   });
   const t=totals();
-  if(t.cost>LEVEL.budget) problemas.push(`Presupuesto: ${t.cost.toFixed(0)} € superan el tope de ${LEVEL.budget} €.`);
+  if(t.cost>LEVEL.budget) problemas.push(tr('m_budget')(t.cost.toFixed(0), LEVEL.budget));
 
   locked=true; redrawCables();
   const ok=problemas.length===0;
   const k=document.getElementById("win-k");
-  k.textContent=ok?"INSTALACIÓN VÁLIDA":"REVISA LA INSTALACIÓN";
+  k.textContent=ok?tr('valid_k'):tr('invalid_k');
   k.style.color=ok?css("--cyan"):css("--red");
-  document.getElementById("win-h").textContent=ok?"Señal en la mesa ✓":"Hay fallos que corregir";
+  document.getElementById("win-h").textContent=ok?tr('valid_h'):tr('invalid_h');
   const res=document.getElementById("win-res");
   if(ok){
     const sobra=LEVEL.budget-t.cost;
-    res.innerHTML=`<div class="good">Las ${cams.length} cámaras entregan señal dentro de presupuesto.</div><br>`+
-      `Coste: <b style="color:var(--txt)">${t.cost.toFixed(0)} €</b> · ${t.total.toFixed(0)} m · ${t.convs} conversores.<br>`+
-      `Puntuación (presupuesto restante): <b style="color:var(--txt)">${sobra.toFixed(0)} €</b>.`;
+    res.innerHTML=`<div class="good">${tr('w_ok')(cams.length)}</div><br>`+
+      tr('w_cost')(t.cost.toFixed(0), t.total.toFixed(0), t.convs)+`<br>`+
+      tr('w_score')(sobra.toFixed(0));
   }else{
     res.innerHTML=problemas.map(p=>`<div class="bad">• ${p}</div>`).join("");
   }
@@ -781,7 +869,7 @@ function buildInv(){
   Object.entries(LEVEL.cableTypes).forEach(([key,ct])=>{
     const b=document.createElement("button");
     b.className="invbtn"; b.dataset.kind="cable"; b.dataset.key=key;
-    b.innerHTML=`<span><span class="nm">${ct.nombre}</span><span class="meta">${ct.eurM} €/m${ct.conv?` · ${ct.conv} conv.`:``}</span></span><span class="dot" style="background:var(${ct.color})"></span>`;
+    b.innerHTML=`<span><span class="nm">${tcable(ct.nombre)}</span><span class="meta">${ct.eurM} €/m${ct.conv?` · ${ct.conv} conv.`:``}</span></span><span class="dot" style="background:var(${ct.color})"></span>`;
     b.addEventListener("click",()=>{mode="cable";curType=key;refreshInv();});
     cablesBox.appendChild(b);
   });
@@ -789,7 +877,7 @@ function buildInv(){
   Object.entries(LEVEL.converters).forEach(([key,cv])=>{
     const b=document.createElement("button");
     b.className="invbtn"; b.dataset.kind="conv"; b.dataset.key=key;
-    b.innerHTML=`<span><span class="nm">${cv.nombre}</span><span class="meta">${cv.eur} € · toca cámara o entrada</span></span><span class="dot" style="background:var(--txt)"></span>`;
+    b.innerHTML=`<span><span class="nm">${cv.nombre}</span><span class="meta">${cv.eur} ${tr('meta_conv')}</span></span><span class="dot" style="background:var(--txt)"></span>`;
     b.addEventListener("click",()=>{mode="conv";curConv=key;refreshInv();});
     convBox.appendChild(b);
   });
@@ -799,14 +887,14 @@ function buildInv(){
   if(hasRamp){
     const rb=document.createElement("button");
     rb.className="invbtn"; rb.dataset.kind="ramp"; rb.dataset.key="ramp";
-    rb.innerHTML=`<span><span class="nm">Pasacables</span><span class="meta">${LEVEL.rampEur} € · toca un pasillo (lo comparten varias cámaras)</span></span><span class="dot" style="background:var(--amber)"></span>`;
+    rb.innerHTML=`<span><span class="nm">${tr('ramp_name')}</span><span class="meta">${LEVEL.rampEur} ${tr('meta_ramp')}</span></span><span class="dot" style="background:var(--amber)"></span>`;
     rb.addEventListener("click",()=>{mode="ramp";refreshInv();});
     elemBox.appendChild(rb);
   }
   if(hasWireless){
     const wb=document.createElement("button");
     wb.className="invbtn"; wb.dataset.kind="rx"; wb.dataset.key="rx";
-    wb.innerHTML=`<span><span class="nm">Receptor (RX)</span><span class="meta">toca cerca de la cámara inalámbrica (dentro del alcance RF)</span></span><span class="dot" style="background:var(--amber)"></span>`;
+    wb.innerHTML=`<span><span class="nm">${tr('rx_name')}</span><span class="meta">${tr('meta_rx')}</span></span><span class="dot" style="background:var(--amber)"></span>`;
     wb.addEventListener("click",()=>{mode="rx";refreshInv();});
     elemBox.appendChild(wb);
   }
@@ -833,9 +921,9 @@ function buildMenu(){
   Object.entries(GAME).forEach(([vid,v])=>{
     const card=document.createElement("div");
     card.className="venue"+(v.soon?" soon":"");
-    card.innerHTML=`<h3>${v.nombre}</h3><div class="sub">${v.sub||""}</div>`;
-    if(v.soon){ const s=document.createElement("div"); s.className="soonlbl"; s.textContent="Próximamente"; card.appendChild(s); }
-    else v.niveles.forEach((lv,idx)=>{ const b=document.createElement("button"); b.className="lvl"; b.textContent=lv.nombre; b.addEventListener("click",()=>cargarNivel(vid,idx)); card.appendChild(b); });
+    card.innerHTML=`<h3>${tvenue(vid)}</h3><div class="sub">${pick(v.sub)||""}</div>`;
+    if(v.soon){ const s=document.createElement("div"); s.className="soonlbl"; s.textContent=tr('soon'); card.appendChild(s); }
+    else v.niveles.forEach((lv,idx)=>{ const b=document.createElement("button"); b.className="lvl"; b.textContent=pick(lv.nombre); b.addEventListener("click",()=>cargarNivel(vid,idx)); card.appendChild(b); });
     box.appendChild(card);
   });
 }
@@ -854,8 +942,8 @@ function cargarNivel(vid,idx){
   inConv=new Array(inputs.length).fill(null);
   ramps=[]; rx={}; curType=Object.keys(LEVEL.cableTypes)[0]; curConv=null; mode="cable"; locked=false;
   zoom.k=1; zoom.tx=0; zoom.ty=0; applyZoom();
-  document.getElementById("nivel").textContent=LEVEL.nombre;
-  document.getElementById("encargo").textContent=LEVEL.encargo;
+  document.getElementById("nivel").textContent=pick(LEVEL.nombre);
+  document.getElementById("encargo").textContent=pick(LEVEL.encargo);
   document.getElementById("win").classList.remove("show");
   buildInv(); drawStatic(); redrawCables(); updateHUD();
   document.getElementById("menu").classList.remove("show");
@@ -870,12 +958,26 @@ function reset(){
   redrawCables(); updateHUD();
 }
 
+function applyLang(){
+  document.querySelectorAll("[data-i18n]").forEach(e=>{ e.textContent=tr(e.dataset.i18n); });
+  document.getElementById("hint").innerHTML=tr("hint");
+  document.querySelectorAll(".langbtn").forEach(b=>b.classList.toggle("on", b.dataset.lang===LANG));
+  buildMenu();
+  if(LEVEL){                                   // re-renderiza el nivel cargado en el nuevo idioma
+    document.getElementById("nivel").textContent=pick(LEVEL.nombre);
+    document.getElementById("encargo").textContent=pick(LEVEL.encargo);
+    buildInv(); drawStatic(); redrawCables(); updateHUD();
+  }
+}
+function setLang(l){ LANG=l; try{localStorage.setItem("realiz_lang",l);}catch(_){} applyLang(); }
+
 document.getElementById("reset").addEventListener("click",reset);
 document.getElementById("win-again").addEventListener("click",reset);
 document.getElementById("validate").addEventListener("click",()=>{if(LEVEL)validate();});
 document.getElementById("win-review").addEventListener("click",()=>document.getElementById("win").classList.remove("show"));
 document.getElementById("tomenu").addEventListener("click",()=>document.getElementById("menu").classList.add("show"));
-buildMenu();
+document.querySelectorAll(".langbtn").forEach(b=>b.addEventListener("click",()=>setLang(b.dataset.lang)));
+applyLang();
 </script>
 </body>
 </html>
