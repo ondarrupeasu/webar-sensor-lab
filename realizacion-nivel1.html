@@ -94,7 +94,7 @@
         <h1 id="nivel">—</h1>
       </div>
       <div style="display:flex;gap:6px;align-items:flex-start">
-        <span class="lang"><button class="langbtn" data-lang="es">ES</button><button class="langbtn" data-lang="en">EN</button></span>
+        <span class="lang"><button class="langbtn" data-lang="es">ES</button><button class="langbtn" data-lang="en">EN</button><button class="langbtn" data-lang="eu">EU</button></span>
         <button id="tomenu" title="Menu">≡</button>
       </div>
     </div>
@@ -148,7 +148,7 @@
 </div>
 
 <div id="menu" class="show">
-  <span class="lang" style="position:absolute;top:22px;right:24px"><button class="langbtn" data-lang="es">ES</button><button class="langbtn" data-lang="en">EN</button></span>
+  <span class="lang" style="position:absolute;top:22px;right:24px"><button class="langbtn" data-lang="es">ES</button><button class="langbtn" data-lang="en">EN</button><button class="langbtn" data-lang="eu">EU</button></span>
   <div class="eyebrow" data-i18n="eyebrow">CIFP TARTANGA · REALIZACIÓN</div>
   <div class="menu-title" data-i18n="menu_title">Elige un tipo de evento</div>
   <div class="menu-sub" data-i18n="menu_sub">Cada recinto sube de dificultad en sus niveles.</div>
@@ -228,6 +228,39 @@ const STR = {
     cables:{ "Fibra":"Fiber" },
     venues:{ teatro:"Theatre", concierto:"Concert", setTV:"TV Set" },
   },
+  eu:{
+    eyebrow:"CIFP TARTANGA · ERREALIZAZIOA",
+    inv_cable:"Inbentarioa · kable mota", inv_conv:"Bihurgailuak", inv_elem:"Gailuak",
+    status:"Egoera", st_conn:"Konektatutako kamerak", st_total:"Kable metroak guztira", st_conv:"Bihurgailuak",
+    st_ramps:"Kable-arrapalak", st_budget:"Aurrekontua", howto:"Nola jokatu",
+    btn_validate:"Prest nago · Balidatu", btn_reset:"Planoa berrezarri", btn_retry:"Berriz saiatu", btn_review:"Planoa berrikusi",
+    menu_title:"Aukeratu ekitaldi mota", menu_sub:"Areto bakoitzak zailtasuna igotzen du bere mailetan.", soon:"Laster",
+    result:"EMAITZA", valid_k:"INSTALAZIO BALIODUNA", invalid_k:"BERRIKUSI INSTALAZIOA",
+    valid_h:"Seinalea mahaian ✓", invalid_h:"Konpondu beharreko akatsak daude",
+    ramp_name:"Kable-arrapala", rx_name:"Hartzailea (RX)",
+    meta_conv:"€ · ukitu kamera bat edo sarrera bat", meta_ramp:"€ · ukitu korridore bat (kamerek partekatzen dute)", meta_rx:"ukitu haririk gabeko kameratik gertu (RF irismenaren barruan)",
+    dec_name:"Decimator", meta_dec:"€ · ukitu kamera bat (HD↔4K trukatzen du)",
+    hint:`Aukeratu <b>kable mota</b> eta arrastatu kameraren <b>objektibotik</b> mahaiaren <b>sarrera</b> batera. <b>Tira egin kableari</b> okertzeko (metroak batzen ditu); saihestu besaulkiak (korridoreak libre gurutza daitezke). Mailak bihurgailuak baditu, jarri kamera edo sarrera ukituz — kontuz noranzkoarekin. Jokoak <b>ez dizu abisatzen</b> zerbait ondo ez badago: sakatu <b>Prest nago</b> balidatzeko. Atximurkatu gerturatzeko.`,
+    m_notconn:n=>`${n}: mahaira konektatu gabe.`,
+    m_hard:n=>`${n}: kableak besaulkiak, hobia edo beste oztopo bat gurutzatzen du.`,
+    m_aisle:n=>`${n}: kableak korridore bat gurutzatzen du kable-arrapalarik gabe (oinazpiko kablea).`,
+    m_len:(n,l,c,lim)=>`${n}: ${c} kablearen ${l} m-k ${lim} m-ko muga gainditzen du.`,
+    m_convcam:(n,cv,f,o)=>`${n}: ${cv} bihurgailuak ${f} espero du, baina kamerak ${o} ematen du — noranzko okerra.`,
+    m_convin:(n,cv,to,mf)=>`${n}: sarrerako ${cv} bihurgailuak ${to} ematen du, baina mahaiak ${mf} behar du — noranzko okerra.`,
+    m_fmtcam:(n,eo,s)=>`${n}: kamerak ${eo} ematen du eta kablea ${s} da: ez datoz bat.`,
+    m_fmtin:(n,c,s,ei)=>`${n}: ${c} kablea (${s}) ez da mahaian sartzen, ${ei} espero baitu.`,
+    m_budget:(c,b)=>`Aurrekontua: ${c} €-k ${b} €-ko muga gainditzen du.`,
+    m_res4k:(n,c)=>`${n}: 4K seinalea ${c} kable batetik, 4K garraiatzen ez duena (erabili 6G/12G/zuntza, edo jaitsi HD-ra Decimator batekin).`,
+    m_resmesa:(n,r,mr)=>`${n}: seinalea ${r}-n iristen da eta mahaiak ${mr}-n lan egiten du (erabili Decimator bat).`,
+    m_norx:n=>`${n}: hartzailerik (RX) jarri gabe.`,
+    m_range:(n,d,r)=>`${n}: hartzailea ${d} m-ra dago, RF irismenetik kanpo (${r} m).`,
+    w_ok:n=>`${n} kamerek seinalea ematen dute aurrekontuaren barruan.`,
+    w_cost:(c,tt,cv)=>`Kostua: <b style="color:var(--txt)">${c} €</b> · ${tt} m · ${cv} bihurgailu.`,
+    w_score:s=>`Puntuazioa (gelditzen den aurrekontua): <b style="color:var(--txt)">${s} €</b>.`,
+    labels:{ "ESCENARIO":"OHOLTZA","FOSO":"HOBIA","BUTACAS":"BESAULKIAK","PASILLO CENTRAL":"ERDIKO KORRIDOREA","PASILLO":"KORRIDOREA","COLUMNA":"ZUTABEA","TORRE PA":"PA DORREA","BARRERA":"HESIA","PÚBLICO (DE PIE)":"JENDEA (ZUTIK)","DECORADO / SET":"DEKORATUA / SETA","MESA PLATÓ":"PLATOKO MAHAIA","FOCO":"FOKUA","CABINA":"KABINA","CONTROL":"KONTROLA" },
+    cables:{ "Fibra":"Zuntza" },
+    venues:{ teatro:"Antzokia", concierto:"Kontzertua", setTV:"TB Platoa" },
+  },
 };
 const tr=k=>{ const s=STR[LANG]||STR.en; return (s[k]!==undefined?s[k]:STR.en[k]); };
 const tl=lbl=>{ const s=STR[LANG]||STR.en; return (s.labels&&s.labels[lbl])||lbl; };   // etiqueta de zona
@@ -240,9 +273,10 @@ const pick=o=> (o&&typeof o==="object") ? (o[LANG]||o.en||o.es) : o;            
    Cada nivel declara su plano, zonas, cámaras, inventario y presupuesto.
    ============================================================ */
 const TEATRO_N1 = {
-  nombre:  { es:"Teatro · Nivel 1", en:"Theatre · Level 1" },
+  nombre:  { es:"Teatro · Nivel 1", en:"Theatre · Level 1", eu:"Antzokia · 1. maila" },
   encargo: { es:"Teatro pequeño. Lleva las 3 cámaras a la cabina. La CAM 2 es una mirrorless con salida HDMI (tramo corto): conviértela a SDI para llegar. Con SDI tienes de sobra — aquí aún no hace falta fibra.",
-             en:"Small theatre. Get the 3 cameras to the booth. CAM 2 is a mirrorless with HDMI output (short reach): convert it to SDI to make it. SDI is plenty here — no fibre needed yet." },
+             en:"Small theatre. Get the 3 cameras to the booth. CAM 2 is a mirrorless with HDMI output (short reach): convert it to SDI to make it. SDI is plenty here — no fibre needed yet.",
+             eu:"Antzoki txikia. Eraman 3 kamerak kabinara. CAM 2 mirrorless bat da, HDMI irteerarekin (tarte laburra): bihurtu SDIra iristeko. SDIrekin nahikoa daukazu — hemen ez da zuntzik behar oraindik." },
   planoM:  { w:110, h:66 },
   escalaPxM: 10.5,
   mesa: { x:95, y:33, inputs:3, inFmt:"sdi", faces:"left" },   // cabina compacta a la derecha, entradas mirando a la sala
@@ -290,9 +324,10 @@ const TEATRO_CABLES = {
 };
 
 const TEATRO_N2 = {
-  nombre:  { es:"Teatro · Nivel 2", en:"Theatre · Level 2" },
+  nombre:  { es:"Teatro · Nivel 2", en:"Theatre · Level 2", eu:"Antzokia · 2. maila" },
   encargo: { es:"Teatro grande: la cabina queda lejos. Las cámaras del frente pasan de 100 m, así que ahí necesitas FIBRA; las de fondo llegan con SDI. La CAM 4 es HDMI (conviértela). Cuadra el presupuesto.",
-             en:"Big theatre: the booth is far. The front cameras exceed 100 m, so they need FIBRE there; the rear ones make it on SDI. CAM 4 is HDMI (convert it). Stay within budget." },
+             en:"Big theatre: the booth is far. The front cameras exceed 100 m, so they need FIBRE there; the rear ones make it on SDI. CAM 4 is HDMI (convert it). Stay within budget.",
+             eu:"Antzoki handia: kabina urrun dago. Aurreko kamerek 100 m gainditzen dituzte, beraz ZUNTZA behar dute hor; atzekoak SDIrekin iristen dira. CAM 4 HDMI da (bihurtu ezazu). Ez gainditu aurrekontua." },
   planoM:  { w:150, h:80 },
   escalaPxM: 7,
   mesa: { x:140, y:40, inputs:4, inFmt:"sdi", faces:"left" },
@@ -318,9 +353,10 @@ const TEATRO_N2 = {
 };
 
 const TEATRO_N3 = {
-  nombre:  { es:"Teatro · Nivel 3", en:"Theatre · Level 3" },
+  nombre:  { es:"Teatro · Nivel 3", en:"Theatre · Level 3", eu:"Antzokia · 3. maila" },
   encargo: { es:"Producción grande y mixta: SDI, una mirrorless HDMI y una PTZ por IP. La mesa trae una entrada IP (IN3): la PTZ entra por Ethernet directa. Las del frente necesitan FIBRA por distancia; ojo al sentido de los conversores y al presupuesto.",
-             en:"Big mixed production: SDI, an HDMI mirrorless and an IP PTZ. The desk has an IP input (IN3): the PTZ goes in over Ethernet directly. The front ones need FIBRE due to distance; mind converter direction and the budget." },
+             en:"Big mixed production: SDI, an HDMI mirrorless and an IP PTZ. The desk has an IP input (IN3): the PTZ goes in over Ethernet directly. The front ones need FIBRE due to distance; mind converter direction and the budget.",
+             eu:"Ekoizpen handi eta mistoa: SDI, HDMI mirrorless bat eta IP PTZ bat. Mahaiak IP sarrera bat du (IN3): PTZ Ethernet bidez zuzenean sartzen da. Aurrekoek ZUNTZA behar dute distantziagatik; kontuz bihurgailuen noranzkoarekin eta aurrekontuarekin." },
   planoM:  { w:150, h:80 },
   escalaPxM: 7,
   mesa: { x:140, y:40, inputs:["sdi","sdi","ip","sdi"], faces:"left" },   // la mesa trae una entrada IP
@@ -351,9 +387,10 @@ const TEATRO_N3 = {
 };
 
 const CONCIERTO_N1 = {
-  nombre:  { es:"Concierto · Nivel 1", en:"Concert · Level 1" },
+  nombre:  { es:"Concierto · Nivel 1", en:"Concert · Level 1", eu:"Kontzertua · 1. maila" },
   encargo: { es:"Gran recinto: las cámaras del foso están lejísimos de la cabina. Rodea el público (de pie) por los laterales, esquiva las torres de PA, y usa fibra en las tiradas largas (SDI solo aguanta 100 m). Cuadra el presupuesto.",
-             en:"Large venue: the pit cameras are miles from the booth. Route around the standing crowd along the sides, avoid the PA towers, and use fibre on the long runs (SDI only holds 100 m). Stay within budget." },
+             en:"Large venue: the pit cameras are miles from the booth. Route around the standing crowd along the sides, avoid the PA towers, and use fibre on the long runs (SDI only holds 100 m). Stay within budget.",
+             eu:"Areto handia: hobiko kamerak kabinatik urrunegi daude. Bideratu jendearen (zutik) inguruan alboetatik, saihestu PA dorreak, eta erabili zuntza tarte luzeetan (SDIk 100 m baino ez ditu eusten). Ez gainditu aurrekontua." },
   planoM:  { w:150, h:90 },
   escalaPxM: 7.5,
   mesa: { x:138, y:45, inputs:4, inFmt:"sdi", faces:"left" },
@@ -382,9 +419,10 @@ const CONCIERTO_N1 = {
 };
 
 const CONCIERTO_N2 = {
-  nombre:  { es:"Concierto · Nivel 2", en:"Concert · Level 2" },
+  nombre:  { es:"Concierto · Nivel 2", en:"Concert · Level 2", eu:"Kontzertua · 2. maila" },
   encargo: { es:"Entra una cámara inalámbrica (steadicam en el foso): no sale cable de ella. Coloca su receptor (RX) dentro del alcance RF y cablea desde el RX a la cabina. El resto de cámaras, como antes.",
-             en:"A wireless camera joins (steadicam in the pit): no cable comes off it. Place its receiver (RX) within RF range and cable from the RX to the booth. The rest of the cameras, as before." },
+             en:"A wireless camera joins (steadicam in the pit): no cable comes off it. Place its receiver (RX) within RF range and cable from the RX to the booth. The rest of the cameras, as before.",
+             eu:"Haririk gabeko kamera bat gehitzen da (steadicam-a hobian): ez zaio kablerik ateratzen. Jarri bere hartzailea (RX) RF irismenaren barruan eta kableatu RXtik kabinara. Gainerako kamerak, lehen bezala." },
   planoM:  { w:150, h:90 },
   escalaPxM: 7.5,
   mesa: { x:138, y:45, inputs:4, inFmt:"sdi", faces:"left" },
@@ -413,9 +451,10 @@ const CONCIERTO_N2 = {
 };
 
 const SETTV_N1 = {
-  nombre:  { es:"Set de TV · Nivel 1", en:"TV Set · Level 1" },
+  nombre:  { es:"Set de TV · Nivel 1", en:"TV Set · Level 1", eu:"TB Platoa · 1. maila" },
   encargo: { es:"Plató pequeño con mezclador tipo ATEM: la mesa tiene SOLO entradas HDMI. Las mirrorless entran por HDMI directo (tramo corto, ≤15 m). La CAM 3 es SDI: conviértela a HDMI para entrar.",
-             en:"Small studio with an ATEM-style switcher: the desk has HDMI inputs ONLY. The mirrorless cameras go in over HDMI directly (short run, ≤15 m). CAM 3 is SDI: convert it to HDMI to get in." },
+             en:"Small studio with an ATEM-style switcher: the desk has HDMI inputs ONLY. The mirrorless cameras go in over HDMI directly (short run, ≤15 m). CAM 3 is SDI: convert it to HDMI to get in.",
+             eu:"Plato txikia ATEM erako nahasgailu batekin: mahaiak HDMI sarrerak BAKARRIK ditu. Mirrorless kamerak HDMI bidez sartzen dira zuzenean (tarte laburra, ≤15 m). CAM 3 SDI da: bihurtu HDMIra sartzeko." },
   planoM:  { w:72, h:52 },
   escalaPxM: 14,
   mesa: { x:36, y:44, inputs:["hdmi","hdmi","hdmi"], faces:"top", label:"CONTROL" },
@@ -442,9 +481,10 @@ const SETTV_N1 = {
 };
 
 const SETTV_N2 = {
-  nombre:  { es:"Set de TV · Nivel 2", en:"TV Set · Level 2" },
+  nombre:  { es:"Set de TV · Nivel 2", en:"TV Set · Level 2", eu:"TB Platoa · 2. maila" },
   encargo: { es:"Plató con mesa mixta: una entrada HDMI (IN1) y dos SDI (IN2, IN3). La mirrorless entra por su HDMI; las de cine, por SDI. Sigue siendo estudio pequeño (tiradas cortas).",
-             en:"Studio with a mixed desk: one HDMI input (IN1) and two SDI (IN2, IN3). The mirrorless goes in via HDMI; the cine cameras via SDI. Still a small studio (short runs)." },
+             en:"Studio with a mixed desk: one HDMI input (IN1) and two SDI (IN2, IN3). The mirrorless goes in via HDMI; the cine cameras via SDI. Still a small studio (short runs).",
+             eu:"Platoa mahai mistoarekin: HDMI sarrera bat (IN1) eta bi SDI (IN2, IN3). Mirrorless-a HDMI bidez sartzen da; zinema-kamerak SDI bidez. Oraindik plato txikia da (tarte laburrak)." },
   planoM:  { w:80, h:56 },
   escalaPxM: 12.5,
   mesa: { x:40, y:48, inputs:["hdmi","sdi","sdi"], faces:"top", label:"CONTROL" },
@@ -471,9 +511,10 @@ const SETTV_N2 = {
 };
 
 const SETTV_N3 = {
-  nombre:  { es:"Set de TV · Nivel 3", en:"TV Set · Level 3" },
+  nombre:  { es:"Set de TV · Nivel 3", en:"TV Set · Level 3", eu:"TB Platoa · 3. maila" },
   encargo: { es:"Plató mayor con mesa SDI y control en SALA APARTE: decorado y mesa arriba, cámaras abajo apuntando al set. Lleva cada cámara al patch de pared (a la derecha); los focos de suelo no estorban al cable.",
-             en:"Larger studio with an SDI desk and the gallery in a SEPARATE ROOM: set and desk at the top, cameras below aiming at the set. Take each camera to the wall patch (on the right); floor lights don't get in the cable's way." },
+             en:"Larger studio with an SDI desk and the gallery in a SEPARATE ROOM: set and desk at the top, cameras below aiming at the set. Take each camera to the wall patch (on the right); floor lights don't get in the cable's way.",
+             eu:"Plato handiagoa SDI mahaiarekin eta kontrola BESTE GELA batean: dekoratua eta mahaia goian, kamerak behean set-era begira. Eraman kamera bakoitza hormako patchera (eskuinean); lurreko fokuek ez diote kableari trabarik egiten." },
   planoM:  { w:92, h:66 },
   escalaPxM: 10.5,
   mesa: { x:82, y:30, inputs:3, inFmt:"sdi", faces:"left", label:"CONTROL" },
@@ -499,9 +540,10 @@ const SETTV_N3 = {
 };
 
 const CONCIERTO_N3 = {
-  nombre:  { es:"Concierto · Nivel 3", en:"Concert · Level 3" },
+  nombre:  { es:"Concierto · Nivel 3", en:"Concert · Level 3", eu:"Kontzertua · 3. maila" },
   encargo: { es:"Arena enorme: distancias descomunales. Las cámaras del foso solo llegan por FIBRA; las de fondo, por SDI. Y una grúa inalámbrica en pista: coloca su RX dentro del alcance. Presupuesto grande, pero ojo.",
-             en:"Huge arena: massive distances. The pit cameras only reach on FIBRE; the rear ones on SDI. Plus a wireless jib on the floor: place its RX within range. Big budget, but be careful." },
+             en:"Huge arena: massive distances. The pit cameras only reach on FIBRE; the rear ones on SDI. Plus a wireless jib on the floor: place its RX within range. Big budget, but be careful.",
+             eu:"Areto erraldoia: distantzia izugarriak. Hobiko kamerak ZUNTZAren bidez baino ez dira iristen; atzekoak SDI bidez. Gainera, haririk gabeko garabi bat pistan: jarri bere RX irismenaren barruan. Aurrekontu handia, baina kontuz." },
   planoM:  { w:210, h:120 },
   escalaPxM: 5.2,
   mesa: { x:198, y:60, inputs:5, inFmt:"sdi", faces:"left" },
@@ -533,9 +575,10 @@ const CONCIERTO_N3 = {
 };
 
 const TEATRO_N4 = {
-  nombre:  { es:"Teatro · Nivel 4", en:"Theatre · Level 4" },
+  nombre:  { es:"Teatro · Nivel 4", en:"Theatre · Level 4", eu:"Antzokia · 4. maila" },
   encargo: { es:"Producción 4K con cámaras REPOSICIONABLES: arrastra cada una dentro de su área de trabajo (recuadro punteado). A más resolución, menos distancia: 12G ~45 m, 6G ~70 m. Acercar una cámara puede dejarte usar un cable más barato; alejarla obliga a FIBRA o a un DECIMATOR (baja a HD para tirar de HD-SDI). Cuadra el presupuesto.",
-             en:"4K production with MOVABLE cameras: drag each one inside its working area (dashed box). Higher resolution, shorter reach: 12G ~45 m, 6G ~70 m. Moving a camera closer may let you use a cheaper cable; moving it away forces FIBRE or a DECIMATOR (drop to HD to run HD-SDI). Meet the budget." },
+             en:"4K production with MOVABLE cameras: drag each one inside its working area (dashed box). Higher resolution, shorter reach: 12G ~45 m, 6G ~70 m. Moving a camera closer may let you use a cheaper cable; moving it away forces FIBRE or a DECIMATOR (drop to HD to run HD-SDI). Meet the budget.",
+             eu:"4K ekoizpena kamera MUGIGARRIEKIN: arrastatu bakoitza bere lan-eremuaren barruan (marra etenezko laukia). Bereizmen handiagoa, irismen laburragoa: 12G ~45 m, 6G ~70 m. Kamera bat gerturatzeak kable merkeago bat erabiltzen utz diezazuke; urruntzeak ZUNTZA edo DECIMATOR bat (HD-ra jaitsi HD-SDI erabiltzeko) behartzen du. Bete aurrekontua." },
   freeCams: true,
   planoM:  { w:120, h:72 },
   escalaPxM: 8.5,
@@ -569,11 +612,14 @@ const TEATRO_N4 = {
 
 const GAME = {
   teatro:    { sub:{ es:"Empiezas con SDI y HDMI en un teatro pequeño. Al subir de nivel el recinto crece: aparece la fibra (SDI no llega) y luego los formatos mixtos (IP).",
-                     en:"Start with SDI and HDMI in a small theatre. As levels go up the venue grows: fibre appears (SDI won't reach) and then mixed formats (IP)." }, niveles:[ TEATRO_N1, TEATRO_N2, TEATRO_N3, TEATRO_N4 ] },
+                     en:"Start with SDI and HDMI in a small theatre. As levels go up the venue grows: fibre appears (SDI won't reach) and then mixed formats (IP).",
+                     eu:"SDI eta HDMIrekin hasten zara antzoki txiki batean. Mailak igo ahala aretoa hazten da: zuntza agertzen da (SDI ez da iristen) eta gero formatu mistoak (IP)." }, niveles:[ TEATRO_N1, TEATRO_N2, TEATRO_N3, TEATRO_N4 ] },
   concierto: { sub:{ es:"Grandes distancias (fibra), público de pie enorme, torres de PA. Escenario a la izquierda.",
-                     en:"Long distances (fibre), huge standing crowd, PA towers. Stage on the left." }, niveles:[ CONCIERTO_N1, CONCIERTO_N2, CONCIERTO_N3 ] },
+                     en:"Long distances (fibre), huge standing crowd, PA towers. Stage on the left.",
+                     eu:"Distantzia luzeak (zuntza), jende ugari zutik, PA dorreak. Oholtza ezkerrean." }, niveles:[ CONCIERTO_N1, CONCIERTO_N2, CONCIERTO_N3 ] },
   setTV:     { sub:{ es:"Decorado y mesa arriba, cámaras abajo apuntando al set. Control en sala aparte (patch de pared).",
-                     en:"Set and desk at the top, cameras below aiming at the set. Gallery in a separate room (wall patch)." }, niveles:[ SETTV_N1, SETTV_N2, SETTV_N3 ] },
+                     en:"Set and desk at the top, cameras below aiming at the set. Gallery in a separate room (wall patch).",
+                     eu:"Dekoratua eta mahaia goian, kamerak behean set-era begira. Kontrola beste gela batean (hormako patcha)." }, niveles:[ SETTV_N1, SETTV_N2, SETTV_N3 ] },
 };
 
 /* ============================================================
