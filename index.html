@@ -3,356 +3,1227 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>WEBAR · Sensor Lab — CIFP Tartanga</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<title>Puzzle de Realización — CIFP Tartanga</title>
 <style>
   :root{
-    --bg:#0a0e0d;
-    --panel:#0f1513;
-    --line:#1c2926;
-    --amber:#ffb427;      /* tally / rec */
-    --cyan:#3fe0d0;        /* señal activa */
-    --dim:#5c6b67;
-    --txt:#e8f0ee;
-    --grid:rgba(63,224,208,.09);
+    --bg:#0a0e0d; --panel:#0f1513; --line:#1c2926;
+    --amber:#ffb427; --cyan:#3fe0d0; --dim:#5c6b67; --txt:#e8f0ee;
+    --red:#ff5a5a; --fiber:#b18cff; --eth:#5fd38a; --grid:rgba(63,224,208,.06);
+    --sdi6g:#49b6e6; --sdi12g:#6f8cf5;
     --mono:'SF Mono',ui-monospace,'Roboto Mono',Menlo,Consolas,monospace;
   }
   *{margin:0;padding:0;box-sizing:border-box}
-  html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--mono);overflow:hidden;-webkit-user-select:none;user-select:none}
-  #stage{position:fixed;inset:0}
-  video,#gl{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-  #gl{z-index:2}
-  video{z-index:1;filter:saturate(.85) contrast(1.05)}
-  body.no-cam video{display:none}
-  body.no-cam #stage{background:
-    radial-gradient(circle at 50% 40%, #12201d 0%, var(--bg) 70%);}
+  html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--mono);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  #app{display:flex;height:100%;gap:1px;background:var(--line)}
+  button{font-family:var(--mono);cursor:pointer}
+  .lang{display:inline-flex;border:1px solid var(--line);border-radius:5px;overflow:hidden;flex:0 0 auto}
+  .langbtn{background:transparent;color:var(--dim);border:0;padding:6px 9px;font-size:10px;letter-spacing:.1em}
+  .langbtn.on{background:var(--cyan);color:var(--bg)}
 
-  /* ---- HUD viewfinder ---- */
-  #hud{position:fixed;inset:0;z-index:5;pointer-events:none}
-  .corner{position:absolute;width:34px;height:34px;border:2px solid var(--cyan);opacity:.85}
-  .corner.tl{top:20px;left:20px;border-right:0;border-bottom:0}
-  .corner.tr{top:20px;right:20px;border-left:0;border-bottom:0}
-  .corner.bl{bottom:20px;left:20px;border-right:0;border-top:0}
-  .corner.br{bottom:20px;right:20px;border-left:0;border-top:0}
+  /* ---- panel lateral ---- */
+  #side{width:290px;min-width:290px;background:var(--panel);padding:22px 20px;display:flex;flex-direction:column;gap:20px;overflow-y:auto}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .eyebrow{font-size:10px;letter-spacing:.28em;color:var(--amber)}
+  h1{font-size:16px;font-weight:400;letter-spacing:.02em;line-height:1.3;margin-top:6px}
+  #tomenu{background:transparent;border:1px solid var(--line);color:var(--dim);width:36px;height:32px;font-size:15px;border-radius:5px;flex:0 0 auto}
+  #tomenu:active{background:var(--line);color:var(--txt)}
+  .encargo{font-size:12px;line-height:1.6;color:var(--dim);border-left:2px solid var(--cyan);padding-left:12px}
+  .block{border-top:1px solid var(--line);padding-top:16px}
+  .block h2{font-size:10px;letter-spacing:.18em;color:var(--dim);margin-bottom:12px;text-transform:uppercase}
+  .stat{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:9px}
+  .stat .lbl{color:var(--dim);letter-spacing:.06em}
+  .stat .val{color:var(--txt);font-variant-numeric:tabular-nums;font-size:14px}
+  .hint{font-size:11px;line-height:1.6;color:var(--dim)}
+  .inv{display:flex;flex-direction:column;gap:8px}
+  .invbtn{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;background:transparent;border:1px solid var(--line);color:var(--dim);padding:10px 12px;font-family:var(--mono);text-align:left;transition:.15s}
+  .invbtn.on{background:#0c1614}
+  .invbtn .nm{font-size:12.5px;letter-spacing:.04em;display:block}
+  .invbtn .meta{font-size:9.5px;letter-spacing:.03em;opacity:.8;display:block;margin-top:3px}
+  .invbtn .dot{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
+  #validate{margin-top:auto;background:var(--cyan);color:var(--bg);border:0;padding:13px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:bold;transition:.18s}
+  #validate:active{opacity:.85}
+  #reset{margin-top:8px;background:transparent;color:var(--dim);border:1px solid var(--line);padding:11px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:.18s}
+  #reset:active{background:var(--line);color:var(--txt)}
 
-  .topbar{position:absolute;top:26px;left:64px;right:64px;display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:.14em}
-  .rec{display:flex;align-items:center;gap:7px;color:var(--amber)}
-  .rec .dot{width:9px;height:9px;border-radius:50%;background:var(--amber);animation:blink 1.1s steps(2,end) infinite}
-  @keyframes blink{50%{opacity:0}}
-  .tc{color:var(--txt);opacity:.9;font-variant-numeric:tabular-nums}
+  /* ---- plano ---- */
+  #stage{flex:1;background:var(--bg);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #plano{width:100%;height:100%;touch-action:none}
+  text{font-family:var(--mono);pointer-events:none}
 
-  .reticle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:1px;height:1px}
-  .reticle::before,.reticle::after{content:"";position:absolute;background:var(--cyan);opacity:.5}
-  .reticle::before{width:26px;height:1px;left:-13px}
-  .reticle::after{height:26px;width:1px;top:-13px}
+  /* ---- resultado ---- */
+  #win{position:absolute;inset:0;z-index:10;background:rgba(10,14,13,.82);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+  #win.show{display:flex}
+  #win .k{font-size:11px;letter-spacing:.3em;color:var(--cyan);margin-bottom:16px}
+  #win h3{font-size:24px;font-weight:400;margin-bottom:10px}
+  #win .res{text-align:left;font-size:12px;line-height:1.7;color:var(--dim);max-width:400px;margin-bottom:24px}
+  #win .res .bad{color:var(--red);margin-bottom:4px}
+  #win .res .good{color:var(--cyan)}
+  #win .btns{display:flex;gap:12px}
+  #win button{background:transparent;color:var(--cyan);border:1.5px solid var(--cyan);padding:13px 30px;font-size:12px;letter-spacing:.16em;text-transform:uppercase}
+  #win button:active{background:var(--cyan);color:var(--bg)}
+  #win .ghost{color:var(--dim);border-color:var(--line)}
 
-  /* ---- telemetría giroscopio ---- */
-  #tele{position:absolute;left:26px;bottom:70px;font-size:10.5px;line-height:1.65;letter-spacing:.08em;color:var(--dim)}
-  #tele b{color:var(--cyan);font-weight:400}
-  #tele .v{color:var(--txt);display:inline-block;min-width:62px;text-align:right}
+  /* ---- menú de eventos ---- */
+  #menu{position:fixed;inset:0;z-index:30;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:30px;overflow-y:auto}
+  #menu.show{display:flex}
+  .menu-title{font-size:22px;font-weight:400;margin:10px 0 4px;color:var(--txt)}
+  .menu-sub{font-size:12px;color:var(--dim);margin-bottom:28px;letter-spacing:.04em}
+  .venues{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;max-width:780px;width:100%}
+  .venue{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:18px;display:flex;flex-direction:column}
+  .venue h3{font-size:15px;font-weight:400;color:var(--cyan);margin-bottom:6px}
+  .venue .sub{font-size:11px;color:var(--dim);margin-bottom:12px;line-height:1.5;min-height:44px}
+  .venue.soon{opacity:.45}
+  .venue .lvl{text-align:left;background:transparent;border:1px solid var(--line);color:var(--txt);padding:9px 12px;font-size:12px;margin-top:8px;transition:.15s}
+  .venue .lvl:hover{border-color:var(--cyan);color:var(--cyan)}
+  .venue .soonlbl{font-size:10px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;margin-top:8px}
 
-  /* ---- controles ---- */
-  #dock{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;gap:1px;background:var(--line);padding-top:1px}
-  .tab{flex:1;background:var(--panel);color:var(--dim);border:0;padding:16px 8px 22px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;transition:.18s}
-  .tab.on{color:var(--cyan);background:#0c1614;box-shadow:inset 0 2px 0 var(--cyan)}
-  .tab:active{background:#0c1614}
-
-  /* ---- gate / permisos ---- */
-  #gate{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center}
-  #gate .eyebrow{font-size:11px;letter-spacing:.3em;color:var(--amber);margin-bottom:18px}
-  #gate h1{font-size:23px;font-weight:400;letter-spacing:.02em;line-height:1.25;margin-bottom:14px;max-width:440px}
-  #gate h1 span{color:var(--cyan)}
-  #gate p{font-size:12.5px;line-height:1.7;color:var(--dim);max-width:400px;margin-bottom:30px}
-  #gate .apis{display:flex;gap:22px;margin-bottom:34px;flex-wrap:wrap;justify-content:center}
-  #gate .api{font-size:10px;letter-spacing:.1em;color:var(--dim)}
-  #gate .api b{display:block;color:var(--txt);font-size:15px;margin-bottom:3px}
-  #go{pointer-events:auto;background:transparent;color:var(--cyan);border:1.5px solid var(--cyan);padding:15px 40px;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:.2s}
-  #go:active{background:var(--cyan);color:var(--bg)}
-  .foot{position:absolute;bottom:24px;font-size:9.5px;letter-spacing:.15em;color:var(--line);color:#2a3936}
-
-  #msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:8;font-size:11px;letter-spacing:.12em;color:var(--amber);text-align:center;pointer-events:none;text-shadow:0 0 8px rgba(0,0,0,.8)}
-  @media (prefers-reduced-motion: reduce){.rec .dot{animation:none}}
+  @media(max-width:720px){
+    #app{flex-direction:column}
+    #side{width:100%;min-width:0;flex-direction:row;flex-wrap:wrap;gap:14px 24px;padding:14px 16px;max-height:46%}
+    #validate,#reset{margin-top:0}
+  }
 </style>
 </head>
-<body class="no-cam">
+<body>
+<div id="app">
 
-<div id="stage">
-  <video id="cam" autoplay muted playsinline></video>
-  <canvas id="gl"></canvas>
+  <aside id="side">
+    <div class="head">
+      <div>
+        <div class="eyebrow" data-i18n="eyebrow">CIFP TARTANGA · REALIZACIÓN</div>
+        <h1 id="nivel">—</h1>
+      </div>
+      <div style="display:flex;gap:6px;align-items:flex-start">
+        <span class="lang"><button class="langbtn" data-lang="es">ES</button><button class="langbtn" data-lang="en">EN</button><button class="langbtn" data-lang="eu">EU</button></span>
+        <button id="tomenu" title="Menu">≡</button>
+      </div>
+    </div>
+    <p class="encargo" id="encargo"></p>
+
+    <div class="block">
+      <h2 data-i18n="inv_cable">Inventario · tipo de cable</h2>
+      <div class="inv" id="inv"></div>
+    </div>
+
+    <div class="block" id="convBlock">
+      <h2 data-i18n="inv_conv">Conversores</h2>
+      <div class="inv" id="convs"></div>
+    </div>
+
+    <div class="block" id="elemBlock">
+      <h2 data-i18n="inv_elem">Elementos</h2>
+      <div class="inv" id="elems"></div>
+    </div>
+
+    <div class="block">
+      <h2 data-i18n="status">Estado</h2>
+      <div class="stat"><span class="lbl" data-i18n="st_conn">Cámaras conectadas</span><span class="val" id="s-conn">0 / 0</span></div>
+      <div class="stat"><span class="lbl" data-i18n="st_total">Metraje total</span><span class="val" id="s-total">0 m</span></div>
+      <div class="stat"><span class="lbl" data-i18n="st_conv">Conversores</span><span class="val" id="s-conv">0</span></div>
+      <div class="stat"><span class="lbl" data-i18n="st_ramps">Pasacables</span><span class="val" id="s-ramps">0</span></div>
+      <div class="stat"><span class="lbl" data-i18n="st_budget">Presupuesto</span><span class="val" id="s-budget">—</span></div>
+    </div>
+
+    <div class="block">
+      <h2 data-i18n="howto">Cómo se juega</h2>
+      <p class="hint" id="hint"></p>
+    </div>
+
+    <button id="validate" data-i18n="btn_validate">Ya lo tengo · Validar</button>
+    <button id="reset" data-i18n="btn_reset">Reiniciar plano</button>
+  </aside>
+
+  <main id="stage">
+    <svg id="plano" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div id="win">
+      <div class="k" id="win-k">RESULTADO</div>
+      <h3 id="win-h">—</h3>
+      <div class="res" id="win-res"></div>
+      <div class="btns">
+        <button id="win-again" data-i18n="btn_retry">Reintentar</button>
+        <button id="win-review" class="ghost" data-i18n="btn_review">Revisar plano</button>
+      </div>
+    </div>
+  </main>
 </div>
 
-<div id="hud">
-  <div class="corner tl"></div><div class="corner tr"></div>
-  <div class="corner bl"></div><div class="corner br"></div>
-  <div class="topbar">
-    <div class="rec"><span class="dot"></span> SENSOR LAB</div>
-    <div class="tc" id="tc">00:00:00:00</div>
-  </div>
-  <div class="reticle"></div>
-  <div id="tele">
-    <div><b>IMU · DeviceOrientation</b></div>
-    <div>α yaw&nbsp;&nbsp;<span class="v" id="oa">—</span>°</div>
-    <div>β pitch <span class="v" id="ob">—</span>°</div>
-    <div>γ roll&nbsp;&nbsp;<span class="v" id="og">—</span>°</div>
-    <div id="dbg" style="margin-top:8px;color:var(--amber);font-size:9px;max-width:60vw;line-height:1.5">esperando sensor…</div>
-  </div>
-</div>
-
-<div id="msg"></div>
-
-<div id="dock">
-  <button class="tab on" data-mode="ficha">Ficha 3D</button>
-  <button class="tab" data-mode="voxel">Selfie voxel</button>
-  <button class="tab" data-mode="grid">Retícula</button>
-</div>
-
-<div id="gate">
-  <div class="eyebrow">CIFP TARTANGA · IMAGEN Y SONIDO</div>
-  <h1>Las tres APIs que mueven la web de <span>Kinder</span>, sin SDK ni marcadores.</h1>
-  <p>Esta demo usa solo estándares del navegador. Enfoca con la cámara, mueve el móvil para orbitar la ficha técnica y prueba el modo selfie cubizado. Requiere HTTPS y permiso de cámara + sensores.</p>
-  <div class="apis">
-    <div class="api"><b>getUserMedia</b>MediaDevices</div>
-    <div class="api"><b>DeviceOrientation</b>Giroscopio / IMU</div>
-    <div class="api"><b>WebGL</b>Three.js r128</div>
-  </div>
-  <button id="go">Iniciar sensores</button>
-  <div class="foot">WEBAR SENSOR LAB · v1.0 · GITHUB PAGES READY</div>
+<div id="menu" class="show">
+  <span class="lang" style="position:absolute;top:22px;right:24px"><button class="langbtn" data-lang="es">ES</button><button class="langbtn" data-lang="en">EN</button><button class="langbtn" data-lang="eu">EU</button></span>
+  <div class="eyebrow" data-i18n="eyebrow">CIFP TARTANGA · REALIZACIÓN</div>
+  <div class="menu-title" data-i18n="menu_title">Elige un tipo de evento</div>
+  <div class="menu-sub" data-i18n="menu_sub">Cada recinto sube de dificultad en sus niveles.</div>
+  <div class="venues" id="venues"></div>
 </div>
 
 <script>
 "use strict";
-const $=s=>document.querySelector(s);
-const msg=(t)=>{const m=$("#msg");m.textContent=t||"";};
-let MODE="ficha";
-let orient={a:0,b:0,g:0};      // valores crudos del sensor
-let smooth={a:0,b:0,g:0};      // suavizados para el render
-let sensorLive=false;          // ¿el giroscopio emite datos?
-let drag={on:false,x:0,y:0,rx:0,ry:0}; // fallback táctil si no hay sensor
+/* ============================================================
+   IDIOMAS (i18n) — es / en (eu se añadirá después)
+   ============================================================ */
+let LANG = localStorage.getItem("realiz_lang") || "en";
+const STR = {
+  es:{
+    eyebrow:"CIFP TARTANGA · REALIZACIÓN",
+    inv_cable:"Inventario · tipo de cable", inv_conv:"Conversores", inv_elem:"Elementos",
+    status:"Estado", st_conn:"Cámaras conectadas", st_total:"Metraje total", st_conv:"Conversores",
+    st_ramps:"Pasacables", st_budget:"Presupuesto", howto:"Cómo se juega",
+    btn_validate:"Ya lo tengo · Validar", btn_reset:"Reiniciar plano", btn_retry:"Reintentar", btn_review:"Revisar plano",
+    menu_title:"Elige un tipo de evento", menu_sub:"Cada recinto sube de dificultad en sus niveles.", soon:"Próximamente",
+    result:"RESULTADO", valid_k:"INSTALACIÓN VÁLIDA", invalid_k:"REVISA LA INSTALACIÓN",
+    valid_h:"Señal en la mesa ✓", invalid_h:"Hay fallos que corregir",
+    ramp_name:"Pasacables", rx_name:"Receptor (RX)",
+    meta_conv:"€ · toca cámara o entrada", meta_ramp:"€ · toca un pasillo (lo comparten varias cámaras)", meta_rx:"toca cerca de la cámara inalámbrica (dentro del alcance RF)",
+    dec_name:"Decimator", meta_dec:"€ · toca una cámara (invierte HD↔4K)",
+    hint:`Elige el <b>tipo de cable</b> y arrastra desde el <b>objetivo</b> de la cámara a una <b>entrada</b> de la mesa. <b>Tira del cable</b> para curvarlo (suma metros); rodea las butacas (los pasillos se cruzan libres). Si el nivel trae conversores, colócalos tocando cámara o entrada — ojo al sentido. El juego <b>no te avisa</b> si algo no encaja: pulsa <b>Ya lo tengo</b> para validar. Pellizca para acercar.`,
+    m_notconn:n=>`${n}: sin conectar a la mesa.`,
+    m_hard:n=>`${n}: el cable cruza las butacas, el foso u otro obstáculo.`,
+    m_aisle:n=>`${n}: el cable cruza un pasillo sin pasacables (cable pisable).`,
+    m_len:(n,l,c,lim)=>`${n}: ${l} m con ${c} supera su límite de ${lim} m.`,
+    m_convcam:(n,cv,f,o)=>`${n}: el conversor ${cv} espera ${f}, pero la cámara saca ${o} — sentido equivocado.`,
+    m_convin:(n,cv,to,mf)=>`${n}: el conversor ${cv} de la entrada saca ${to}, pero la mesa necesita ${mf} — sentido equivocado.`,
+    m_fmtcam:(n,eo,s)=>`${n}: la cámara entrega ${eo} y el cable es ${s}: no encajan.`,
+    m_fmtin:(n,c,s,ei)=>`${n}: el cable ${c} (${s}) no entra en la mesa, que espera ${ei}.`,
+    m_budget:(c,b)=>`Presupuesto: ${c} € superan el tope de ${b} €.`,
+    m_res4k:(n,c)=>`${n}: señal 4K por un cable ${c} que no transporta 4K (usa 6G/12G/fibra, o baja a HD con un Decimator).`,
+    m_resmesa:(n,r,mr)=>`${n}: la señal llega en ${r} y la mesa trabaja en ${mr} (usa un Decimator).`,
+    m_norx:n=>`${n}: sin receptor (RX) colocado.`,
+    m_range:(n,d,r)=>`${n}: el receptor está a ${d} m, fuera del alcance RF (${r} m).`,
+    w_ok:n=>`Las ${n} cámaras entregan señal dentro de presupuesto.`,
+    w_cost:(c,tt,cv)=>`Coste: <b style="color:var(--txt)">${c} €</b> · ${tt} m · ${cv} conversores.`,
+    w_score:s=>`Puntuación (presupuesto restante): <b style="color:var(--txt)">${s} €</b>.`,
+    labels:{ "ESCENARIO":"ESCENARIO","FOSO":"FOSO","BUTACAS":"BUTACAS","PASILLO CENTRAL":"PASILLO CENTRAL","PASILLO":"PASILLO","COLUMNA":"COLUMNA","TORRE PA":"TORRE PA","BARRERA":"BARRERA","PÚBLICO (DE PIE)":"PÚBLICO (DE PIE)","DECORADO / SET":"DECORADO / SET","MESA PLATÓ":"MESA PLATÓ","FOCO":"FOCO","CABINA":"CABINA","CONTROL":"CONTROL" },
+    cables:{ "Fibra":"Fibra" },
+    venues:{ teatro:"Teatro", concierto:"Concierto", setTV:"Set de TV" },
+  },
+  en:{
+    eyebrow:"CIFP TARTANGA · TV DIRECTING",
+    inv_cable:"Inventory · cable type", inv_conv:"Converters", inv_elem:"Devices",
+    status:"Status", st_conn:"Cameras connected", st_total:"Total cable", st_conv:"Converters",
+    st_ramps:"Cable ramps", st_budget:"Budget", howto:"How to play",
+    btn_validate:"I'm done · Validate", btn_reset:"Reset plan", btn_retry:"Retry", btn_review:"Review plan",
+    menu_title:"Choose an event type", menu_sub:"Each venue ramps up difficulty across its levels.", soon:"Coming soon",
+    result:"RESULT", valid_k:"INSTALLATION VALID", invalid_k:"REVIEW THE INSTALLATION",
+    valid_h:"Signal at the desk ✓", invalid_h:"Issues to fix",
+    ramp_name:"Cable ramp", rx_name:"Receiver (RX)",
+    meta_conv:"€ · tap a camera or input", meta_ramp:"€ · tap an aisle (shared by cameras)", meta_rx:"tap near the wireless camera (within RF range)",
+    dec_name:"Decimator", meta_dec:"€ · tap a camera (flips HD↔4K)",
+    hint:`Pick a <b>cable type</b> and drag from the camera's <b>output</b> to a desk <b>input</b>. <b>Pull the cable</b> to bend it (adds metres); route around the seating (aisles are free to cross). If the level has converters, place them by tapping a camera or input — mind the direction. The game <b>won't warn you</b> if something doesn't fit: press <b>I'm done</b> to validate. Pinch to zoom.`,
+    m_notconn:n=>`${n}: not connected to the desk.`,
+    m_hard:n=>`${n}: the cable crosses the seating, the pit or another obstacle.`,
+    m_aisle:n=>`${n}: the cable crosses an aisle with no cable ramp (trip hazard).`,
+    m_len:(n,l,c,lim)=>`${n}: ${l} m of ${c} exceeds its ${lim} m limit.`,
+    m_convcam:(n,cv,f,o)=>`${n}: the ${cv} converter expects ${f}, but the camera outputs ${o} — wrong direction.`,
+    m_convin:(n,cv,to,mf)=>`${n}: the ${cv} converter at the input outputs ${to}, but the desk needs ${mf} — wrong direction.`,
+    m_fmtcam:(n,eo,s)=>`${n}: the camera delivers ${eo} and the cable is ${s}: they don't match.`,
+    m_fmtin:(n,c,s,ei)=>`${n}: the ${c} cable (${s}) doesn't fit the desk, which expects ${ei}.`,
+    m_budget:(c,b)=>`Budget: ${c} € exceeds the ${b} € cap.`,
+    m_res4k:(n,c)=>`${n}: 4K signal over a ${c} cable that doesn't carry 4K (use 6G/12G/fibre, or drop to HD with a Decimator).`,
+    m_resmesa:(n,r,mr)=>`${n}: the signal arrives in ${r} and the desk works in ${mr} (use a Decimator).`,
+    m_norx:n=>`${n}: no receiver (RX) placed.`,
+    m_range:(n,d,r)=>`${n}: the receiver is ${d} m away, out of RF range (${r} m).`,
+    w_ok:n=>`All ${n} cameras deliver signal within budget.`,
+    w_cost:(c,tt,cv)=>`Cost: <b style="color:var(--txt)">${c} €</b> · ${tt} m · ${cv} converters.`,
+    w_score:s=>`Score (budget left): <b style="color:var(--txt)">${s} €</b>.`,
+    labels:{ "ESCENARIO":"STAGE","FOSO":"PIT","BUTACAS":"SEATING","PASILLO CENTRAL":"CENTER AISLE","PASILLO":"AISLE","COLUMNA":"COLUMN","TORRE PA":"PA TOWER","BARRERA":"BARRIER","PÚBLICO (DE PIE)":"STANDING CROWD","DECORADO / SET":"SET","MESA PLATÓ":"PRESENTER DESK","FOCO":"FLOOR LIGHT","CABINA":"BOOTH","CONTROL":"CONTROL ROOM" },
+    cables:{ "Fibra":"Fiber" },
+    venues:{ teatro:"Theatre", concierto:"Concert", setTV:"TV Set" },
+  },
+  eu:{
+    eyebrow:"CIFP TARTANGA · ERREALIZAZIOA",
+    inv_cable:"Inbentarioa · kable mota", inv_conv:"Bihurgailuak", inv_elem:"Gailuak",
+    status:"Egoera", st_conn:"Konektatutako kamerak", st_total:"Kable metroak guztira", st_conv:"Bihurgailuak",
+    st_ramps:"Kable-arrapalak", st_budget:"Aurrekontua", howto:"Nola jokatu",
+    btn_validate:"Prest nago · Balidatu", btn_reset:"Planoa berrezarri", btn_retry:"Berriz saiatu", btn_review:"Planoa berrikusi",
+    menu_title:"Aukeratu ekitaldi mota", menu_sub:"Areto bakoitzak zailtasuna igotzen du bere mailetan.", soon:"Laster",
+    result:"EMAITZA", valid_k:"INSTALAZIO BALIODUNA", invalid_k:"BERRIKUSI INSTALAZIOA",
+    valid_h:"Seinalea mahaian ✓", invalid_h:"Konpondu beharreko akatsak daude",
+    ramp_name:"Kable-arrapala", rx_name:"Hartzailea (RX)",
+    meta_conv:"€ · ukitu kamera bat edo sarrera bat", meta_ramp:"€ · ukitu korridore bat (kamerek partekatzen dute)", meta_rx:"ukitu haririk gabeko kameratik gertu (RF irismenaren barruan)",
+    dec_name:"Decimator", meta_dec:"€ · ukitu kamera bat (HD↔4K trukatzen du)",
+    hint:`Aukeratu <b>kable mota</b> eta arrastatu kameraren <b>objektibotik</b> mahaiaren <b>sarrera</b> batera. <b>Tira egin kableari</b> okertzeko (metroak batzen ditu); saihestu besaulkiak (korridoreak libre gurutza daitezke). Mailak bihurgailuak baditu, jarri kamera edo sarrera ukituz — kontuz noranzkoarekin. Jokoak <b>ez dizu abisatzen</b> zerbait ondo ez badago: sakatu <b>Prest nago</b> balidatzeko. Atximurkatu gerturatzeko.`,
+    m_notconn:n=>`${n}: mahaira konektatu gabe.`,
+    m_hard:n=>`${n}: kableak besaulkiak, hobia edo beste oztopo bat gurutzatzen du.`,
+    m_aisle:n=>`${n}: kableak korridore bat gurutzatzen du kable-arrapalarik gabe (oinazpiko kablea).`,
+    m_len:(n,l,c,lim)=>`${n}: ${c} kablearen ${l} m-k ${lim} m-ko muga gainditzen du.`,
+    m_convcam:(n,cv,f,o)=>`${n}: ${cv} bihurgailuak ${f} espero du, baina kamerak ${o} ematen du — noranzko okerra.`,
+    m_convin:(n,cv,to,mf)=>`${n}: sarrerako ${cv} bihurgailuak ${to} ematen du, baina mahaiak ${mf} behar du — noranzko okerra.`,
+    m_fmtcam:(n,eo,s)=>`${n}: kamerak ${eo} ematen du eta kablea ${s} da: ez datoz bat.`,
+    m_fmtin:(n,c,s,ei)=>`${n}: ${c} kablea (${s}) ez da mahaian sartzen, ${ei} espero baitu.`,
+    m_budget:(c,b)=>`Aurrekontua: ${c} €-k ${b} €-ko muga gainditzen du.`,
+    m_res4k:(n,c)=>`${n}: 4K seinalea ${c} kable batetik, 4K garraiatzen ez duena (erabili 6G/12G/zuntza, edo jaitsi HD-ra Decimator batekin).`,
+    m_resmesa:(n,r,mr)=>`${n}: seinalea ${r}-n iristen da eta mahaiak ${mr}-n lan egiten du (erabili Decimator bat).`,
+    m_norx:n=>`${n}: hartzailerik (RX) jarri gabe.`,
+    m_range:(n,d,r)=>`${n}: hartzailea ${d} m-ra dago, RF irismenetik kanpo (${r} m).`,
+    w_ok:n=>`${n} kamerek seinalea ematen dute aurrekontuaren barruan.`,
+    w_cost:(c,tt,cv)=>`Kostua: <b style="color:var(--txt)">${c} €</b> · ${tt} m · ${cv} bihurgailu.`,
+    w_score:s=>`Puntuazioa (gelditzen den aurrekontua): <b style="color:var(--txt)">${s} €</b>.`,
+    labels:{ "ESCENARIO":"OHOLTZA","FOSO":"HOBIA","BUTACAS":"BESAULKIAK","PASILLO CENTRAL":"ERDIKO KORRIDOREA","PASILLO":"KORRIDOREA","COLUMNA":"ZUTABEA","TORRE PA":"PA DORREA","BARRERA":"HESIA","PÚBLICO (DE PIE)":"JENDEA (ZUTIK)","DECORADO / SET":"DEKORATUA / SETA","MESA PLATÓ":"PLATOKO MAHAIA","FOCO":"FOKUA","CABINA":"KABINA","CONTROL":"KONTROLA" },
+    cables:{ "Fibra":"Zuntza" },
+    venues:{ teatro:"Antzokia", concierto:"Kontzertua", setTV:"TB Platoa" },
+  },
+};
+const tr=k=>{ const s=STR[LANG]||STR.en; return (s[k]!==undefined?s[k]:STR.en[k]); };
+const tl=lbl=>{ const s=STR[LANG]||STR.en; return (s.labels&&s.labels[lbl])||lbl; };   // etiqueta de zona
+const tcable=nm=>{ const s=STR[LANG]||STR.en; return (s.cables&&s.cables[nm])||nm; };   // nombre de cable
+const tvenue=v=>{ const s=STR[LANG]||STR.en; return (s.venues&&s.venues[v])||v; };
+const pick=o=> (o&&typeof o==="object") ? (o[LANG]||o.en||o.es) : o;                    // campo multilingüe {es,en}
 
-/* ---------- 1. CÁMARA · getUserMedia ---------- */
-async function startCamera(){
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},
-      audio:false
-    });
-    $("#cam").srcObject=stream;
-    document.body.classList.remove("no-cam");
-    return true;
-  }catch(e){
-    // sin cámara la demo sigue: fondo sintético. Es un fallback, no un error fatal.
-    document.body.classList.add("no-cam");
-    msg("SIN CÁMARA · MODO FONDO SINTÉTICO");
-    setTimeout(()=>msg(""),2600);
-    return false;
-  }
+/* ============================================================
+   NIVELES — todo en METROS. Un "evento" es una lista de niveles.
+   Cada nivel declara su plano, zonas, cámaras, inventario y presupuesto.
+   ============================================================ */
+const TEATRO_N1 = {
+  nombre:  { es:"Teatro · Nivel 1", en:"Theatre · Level 1", eu:"Antzokia · 1. maila" },
+  encargo: { es:"Teatro pequeño. Lleva las 3 cámaras a la cabina. La CAM 2 es una mirrorless con salida HDMI (tramo corto): conviértela a SDI para llegar. Con SDI tienes de sobra — aquí aún no hace falta fibra.",
+             en:"Small theatre. Get the 3 cameras to the booth. CAM 2 is a mirrorless with HDMI output (short reach): convert it to SDI to make it. SDI is plenty here — no fibre needed yet.",
+             eu:"Antzoki txikia. Eraman 3 kamerak kabinara. CAM 2 mirrorless bat da, HDMI irteerarekin (tarte laburra): bihurtu SDIra iristeko. SDIrekin nahikoa daukazu — hemen ez da zuntzik behar oraindik." },
+  planoM:  { w:110, h:66 },
+  escalaPxM: 10.5,
+  mesa: { x:95, y:33, inputs:3, inFmt:"sdi", faces:"left" },   // cabina compacta a la derecha, entradas mirando a la sala
+  cams: [
+    { id:"CAM 1", x:25, y:12, out:"sdi"  },
+    { id:"CAM 2", x:25, y:42, out:"hdmi" },
+    { id:"CAM 3", x:25, y:54, out:"sdi"  },
+  ],
+  // zonas (kind: stage=decor, pit/seating=bloqueo, walk=paso libre)
+  zones: [
+    { shape:"rect", kind:"stage",   x:10, y:33, w:12, h:54, label:"ESCENARIO" },
+    { shape:"rect", kind:"pit",     x:20, y:33, w:6,  h:50, label:"FOSO" },
+    { shape:"rect", kind:"seating", x:52, y:21, w:48, h:14, label:"BUTACAS" },
+    { shape:"rect", kind:"walk",    x:52, y:33, w:48, h:10, label:"PASILLO CENTRAL" },
+    { shape:"rect", kind:"seating", x:52, y:45, w:48, h:14, label:"BUTACAS" },
+    { shape:"rect", kind:"walk",    x:82, y:33, w:10, h:54, label:"PASILLO" },
+  ],
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    sdi:  { nombre:"HD-SDI", signal:"sdi",  limite:100, eurM:3,   conv:0, color:"--cyan"  },
+    hdmi: { nombre:"HDMI",   signal:"hdmi", limite:15,  eurM:1.5, conv:0, color:"--amber" },
+  },
+  converters: {
+    hdmi_sdi: { nombre:"HDMI→SDI", tag:"H→S", from:"hdmi", to:"sdi",  eur:180 },
+    sdi_hdmi: { nombre:"SDI→HDMI", tag:"S→H", from:"sdi",  to:"hdmi", eur:150 },
+  },
+  convEur: 250,
+  budget: 1400,
+};
+
+// zonas compartidas por N2 y N3 (teatro más grande, con columnas)
+const TEATRO_ZONAS_2 = [
+  { shape:"rect",   kind:"stage",   x:10,  y:40, w:14, h:68, label:"ESCENARIO" },
+  { shape:"rect",   kind:"pit",     x:21,  y:40, w:6,  h:64, label:"FOSO" },
+  { shape:"rect",   kind:"seating", x:74,  y:24, w:88, h:16, label:"BUTACAS" },
+  { shape:"rect",   kind:"walk",    x:74,  y:37, w:88, h:10, label:"PASILLO CENTRAL" },
+  { shape:"rect",   kind:"seating", x:74,  y:50, w:88, h:16, label:"BUTACAS" },
+  { shape:"rect",   kind:"walk",    x:126, y:40, w:8,  h:68, label:"PASILLO" },
+  { shape:"circle", kind:"column",  x:65,  y:10, r:3, label:"COLUMNA" },
+  { shape:"circle", kind:"column",  x:95,  y:70, r:3, label:"COLUMNA" },
+];
+const TEATRO_CABLES = {
+  sdi:   { nombre:"HD-SDI", signal:"sdi", limite:100, eurM:3,  conv:0, color:"--cyan"  },
+  fibra: { nombre:"Fibra",  signal:"sdi", limite:500, eurM:10, conv:2, color:"--fiber" },
+};
+
+const TEATRO_N2 = {
+  nombre:  { es:"Teatro · Nivel 2", en:"Theatre · Level 2", eu:"Antzokia · 2. maila" },
+  encargo: { es:"Teatro grande: la cabina queda lejos. Las cámaras del frente pasan de 100 m, así que ahí necesitas FIBRA; las de fondo llegan con SDI. La CAM 4 es HDMI (conviértela). Cuadra el presupuesto.",
+             en:"Big theatre: the booth is far. The front cameras exceed 100 m, so they need FIBRE there; the rear ones make it on SDI. CAM 4 is HDMI (convert it). Stay within budget.",
+             eu:"Antzoki handia: kabina urrun dago. Aurreko kamerek 100 m gainditzen dituzte, beraz ZUNTZA behar dute hor; atzekoak SDIrekin iristen dira. CAM 4 HDMI da (bihurtu ezazu). Ez gainditu aurrekontua." },
+  planoM:  { w:150, h:80 },
+  escalaPxM: 7,
+  mesa: { x:140, y:40, inputs:4, inFmt:"sdi", faces:"left" },
+  cams: [
+    { id:"CAM 1", x:27,  y:20, out:"sdi"  },   // frente → fibra
+    { id:"CAM 2", x:27,  y:54, out:"sdi"  },   // frente → fibra
+    { id:"CAM 3", x:126, y:20, out:"sdi"  },   // fondo → SDI
+    { id:"CAM 4", x:126, y:56, out:"hdmi" },   // fondo, mirrorless → convertir
+  ],
+  zones: TEATRO_ZONAS_2,
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    sdi:  { nombre:"HD-SDI", signal:"sdi",  limite:100, eurM:3,   conv:0, color:"--cyan"  },
+    hdmi: { nombre:"HDMI",   signal:"hdmi", limite:15,  eurM:1.5, conv:0, color:"--amber" },
+    fibra:{ nombre:"Fibra",  signal:"sdi",  limite:500, eurM:10,  conv:2, color:"--fiber" },
+  },
+  converters: {
+    hdmi_sdi: { nombre:"HDMI→SDI", tag:"H→S", from:"hdmi", to:"sdi",  eur:180 },
+    sdi_hdmi: { nombre:"SDI→HDMI", tag:"S→H", from:"sdi",  to:"hdmi", eur:150 },
+  },
+  convEur: 250,
+  budget: 3800,
+};
+
+const TEATRO_N3 = {
+  nombre:  { es:"Teatro · Nivel 3", en:"Theatre · Level 3", eu:"Antzokia · 3. maila" },
+  encargo: { es:"Producción grande y mixta: SDI, una mirrorless HDMI y una PTZ por IP. La mesa trae una entrada IP (IN3): la PTZ entra por Ethernet directa. Las del frente necesitan FIBRA por distancia; ojo al sentido de los conversores y al presupuesto.",
+             en:"Big mixed production: SDI, an HDMI mirrorless and an IP PTZ. The desk has an IP input (IN3): the PTZ goes in over Ethernet directly. The front ones need FIBRE due to distance; mind converter direction and the budget.",
+             eu:"Ekoizpen handi eta mistoa: SDI, HDMI mirrorless bat eta IP PTZ bat. Mahaiak IP sarrera bat du (IN3): PTZ Ethernet bidez zuzenean sartzen da. Aurrekoek ZUNTZA behar dute distantziagatik; kontuz bihurgailuen noranzkoarekin eta aurrekontuarekin." },
+  planoM:  { w:150, h:80 },
+  escalaPxM: 7,
+  mesa: { x:140, y:40, inputs:["sdi","sdi","ip","sdi"], faces:"left" },   // la mesa trae una entrada IP
+  cams: [
+    { id:"CAM 1", x:27,  y:24, out:"sdi"  },   // frente → fibra
+    { id:"CAM 2", x:27,  y:54, out:"hdmi" },   // frente, mirrorless → convertir + fibra
+    { id:"CAM 3", x:126, y:22, out:"ip"   },   // fondo, PTZ → Ethernet directo a la entrada IP
+    { id:"CAM 4", x:126, y:56, out:"sdi"  },   // fondo → SDI
+  ],
+  zones: TEATRO_ZONAS_2,
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    sdi:   { nombre:"HD-SDI",   signal:"sdi",  limite:100, eurM:3,   conv:0, color:"--cyan"  },
+    fibra: { nombre:"Fibra",    signal:"sdi",  limite:500, eurM:10,  conv:2, color:"--fiber" },
+    hdmi:  { nombre:"HDMI",     signal:"hdmi", limite:15,  eurM:1.5, conv:0, color:"--amber" },
+    eth:   { nombre:"Ethernet", signal:"ip",   limite:100, eurM:2,   conv:0, color:"--eth"   },
+  },
+  converters: {
+    hdmi_sdi: { nombre:"HDMI→SDI", tag:"H→S", from:"hdmi", to:"sdi",  eur:180 },
+    sdi_hdmi: { nombre:"SDI→HDMI", tag:"S→H", from:"sdi",  to:"hdmi", eur:150 },
+    ip_sdi:   { nombre:"IP→SDI",   tag:"I→S", from:"ip",   to:"sdi",  eur:300 },
+    sdi_ip:   { nombre:"SDI→IP",   tag:"S→I", from:"sdi",  to:"ip",   eur:300 },
+    hdmi_ip:  { nombre:"HDMI→IP",  tag:"H→I", from:"hdmi", to:"ip",   eur:350 },
+    ip_hdmi:  { nombre:"IP→HDMI",  tag:"I→H", from:"ip",   to:"hdmi", eur:300 },
+  },
+  convEur: 250,
+  budget: 4200,
+};
+
+const CONCIERTO_N1 = {
+  nombre:  { es:"Concierto · Nivel 1", en:"Concert · Level 1", eu:"Kontzertua · 1. maila" },
+  encargo: { es:"Gran recinto: las cámaras del foso están lejísimos de la cabina. Rodea el público (de pie) por los laterales, esquiva las torres de PA, y usa fibra en las tiradas largas (SDI solo aguanta 100 m). Cuadra el presupuesto.",
+             en:"Large venue: the pit cameras are miles from the booth. Route around the standing crowd along the sides, avoid the PA towers, and use fibre on the long runs (SDI only holds 100 m). Stay within budget.",
+             eu:"Areto handia: hobiko kamerak kabinatik urrunegi daude. Bideratu jendearen (zutik) inguruan alboetatik, saihestu PA dorreak, eta erabili zuntza tarte luzeetan (SDIk 100 m baino ez ditu eusten). Ez gainditu aurrekontua." },
+  planoM:  { w:150, h:90 },
+  escalaPxM: 7.5,
+  mesa: { x:138, y:45, inputs:4, inFmt:"sdi", faces:"left" },
+  cams: [
+    { id:"CAM 1", x:30,  y:20, out:"sdi" },   // foso, frente — tirada larga → fibra
+    { id:"CAM 2", x:30,  y:70, out:"sdi" },   // foso, frente — tirada larga → fibra
+    { id:"CAM 3", x:118, y:25, out:"sdi" },   // fondo, cerca de cabina → SDI
+    { id:"CAM 4", x:118, y:65, out:"sdi" },
+  ],
+  zones: [
+    { shape:"rect",   kind:"stage",   x:13,  y:45, w:18, h:74, label:"ESCENARIO" },
+    { shape:"rect",   kind:"pit",     x:25,  y:45, w:6,  h:70, label:"BARRERA" },
+    { shape:"rect",   kind:"seating", x:72,  y:45, w:76, h:62, label:"PÚBLICO (DE PIE)" },
+    { shape:"circle", kind:"column",  x:60,  y:10, r:3, label:"TORRE PA" },
+    { shape:"circle", kind:"column",  x:60,  y:80, r:3, label:"TORRE PA" },
+    { shape:"rect",   kind:"walk",    x:126, y:45, w:8,  h:74, label:"PASILLO" },
+  ],
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    sdi:   { nombre:"HD-SDI", signal:"sdi", limite:100, eurM:3,  conv:0, color:"--cyan"  },
+    fibra: { nombre:"Fibra",  signal:"sdi", limite:500, eurM:10, conv:2, color:"--fiber" },
+  },
+  converters: {},
+  convEur: 250,
+  budget: 4200,
+};
+
+const CONCIERTO_N2 = {
+  nombre:  { es:"Concierto · Nivel 2", en:"Concert · Level 2", eu:"Kontzertua · 2. maila" },
+  encargo: { es:"Entra una cámara inalámbrica (steadicam en el foso): no sale cable de ella. Coloca su receptor (RX) dentro del alcance RF y cablea desde el RX a la cabina. El resto de cámaras, como antes.",
+             en:"A wireless camera joins (steadicam in the pit): no cable comes off it. Place its receiver (RX) within RF range and cable from the RX to the booth. The rest of the cameras, as before.",
+             eu:"Haririk gabeko kamera bat gehitzen da (steadicam-a hobian): ez zaio kablerik ateratzen. Jarri bere hartzailea (RX) RF irismenaren barruan eta kableatu RXtik kabinara. Gainerako kamerak, lehen bezala." },
+  planoM:  { w:150, h:90 },
+  escalaPxM: 7.5,
+  mesa: { x:138, y:45, inputs:4, inFmt:"sdi", faces:"left" },
+  cams: [
+    { id:"CAM 1", x:32, y:45, out:"sdi", wireless:true, rxFmt:"sdi", range:85, txEur:700 },  // steadicam inalámbrica
+    { id:"CAM 2", x:30, y:18, out:"sdi" },   // foso, cableada → fibra
+    { id:"CAM 3", x:118, y:30, out:"sdi" },  // fondo → SDI
+    { id:"CAM 4", x:118, y:66, out:"sdi" },  // fondo → SDI
+  ],
+  zones: [
+    { shape:"rect",   kind:"stage",   x:13,  y:45, w:18, h:74, label:"ESCENARIO" },
+    { shape:"rect",   kind:"pit",     x:25,  y:45, w:6,  h:70, label:"BARRERA" },
+    { shape:"rect",   kind:"seating", x:72,  y:45, w:76, h:62, label:"PÚBLICO (DE PIE)" },
+    { shape:"circle", kind:"column",  x:60,  y:10, r:3, label:"TORRE PA" },
+    { shape:"circle", kind:"column",  x:60,  y:80, r:3, label:"TORRE PA" },
+    { shape:"rect",   kind:"walk",    x:126, y:45, w:8,  h:74, label:"PASILLO" },
+  ],
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    sdi:   { nombre:"HD-SDI", signal:"sdi", limite:100, eurM:3,  conv:0, color:"--cyan"  },
+    fibra: { nombre:"Fibra",  signal:"sdi", limite:500, eurM:10, conv:2, color:"--fiber" },
+  },
+  converters: {},
+  convEur: 250,
+  budget: 3200,
+};
+
+const SETTV_N1 = {
+  nombre:  { es:"Set de TV · Nivel 1", en:"TV Set · Level 1", eu:"TB Platoa · 1. maila" },
+  encargo: { es:"Plató pequeño con mezclador tipo ATEM: la mesa tiene SOLO entradas HDMI. Las mirrorless entran por HDMI directo (tramo corto, ≤15 m). La CAM 3 es SDI: conviértela a HDMI para entrar.",
+             en:"Small studio with an ATEM-style switcher: the desk has HDMI inputs ONLY. The mirrorless cameras go in over HDMI directly (short run, ≤15 m). CAM 3 is SDI: convert it to HDMI to get in.",
+             eu:"Plato txikia ATEM erako nahasgailu batekin: mahaiak HDMI sarrerak BAKARRIK ditu. Mirrorless kamerak HDMI bidez sartzen dira zuzenean (tarte laburra, ≤15 m). CAM 3 SDI da: bihurtu HDMIra sartzeko." },
+  planoM:  { w:72, h:52 },
+  escalaPxM: 14,
+  mesa: { x:36, y:44, inputs:["hdmi","hdmi","hdmi"], faces:"top", label:"CONTROL" },
+  cams: [
+    { id:"CAM 1", x:24, y:30, out:"hdmi", dir:"up" },
+    { id:"CAM 2", x:36, y:30, out:"hdmi", dir:"up" },
+    { id:"CAM 3", x:48, y:30, out:"sdi",  dir:"up" },
+  ],
+  zones: [
+    { shape:"rect", kind:"stage",   x:36, y:9,  w:56, h:8, label:"DECORADO / SET" },
+    { shape:"rect", kind:"seating", x:36, y:20, w:24, h:6, label:"MESA PLATÓ" },
+  ],
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    hdmi: { nombre:"HDMI",   signal:"hdmi", limite:15,  eurM:1.5, conv:0, color:"--amber" },
+    sdi:  { nombre:"HD-SDI", signal:"sdi",  limite:100, eurM:3,   conv:0, color:"--cyan"  },
+  },
+  converters: {
+    sdi_hdmi: { nombre:"SDI→HDMI", tag:"S→H", from:"sdi",  to:"hdmi", eur:150 },
+    hdmi_sdi: { nombre:"HDMI→SDI", tag:"H→S", from:"hdmi", to:"sdi",  eur:180 },
+  },
+  convEur: 250,
+  budget: 500,
+};
+
+const SETTV_N2 = {
+  nombre:  { es:"Set de TV · Nivel 2", en:"TV Set · Level 2", eu:"TB Platoa · 2. maila" },
+  encargo: { es:"Plató con mesa mixta: una entrada HDMI (IN1) y dos SDI (IN2, IN3). La mirrorless entra por su HDMI; las de cine, por SDI. Sigue siendo estudio pequeño (tiradas cortas).",
+             en:"Studio with a mixed desk: one HDMI input (IN1) and two SDI (IN2, IN3). The mirrorless goes in via HDMI; the cine cameras via SDI. Still a small studio (short runs).",
+             eu:"Platoa mahai mistoarekin: HDMI sarrera bat (IN1) eta bi SDI (IN2, IN3). Mirrorless-a HDMI bidez sartzen da; zinema-kamerak SDI bidez. Oraindik plato txikia da (tarte laburrak)." },
+  planoM:  { w:80, h:56 },
+  escalaPxM: 12.5,
+  mesa: { x:40, y:48, inputs:["hdmi","sdi","sdi"], faces:"top", label:"CONTROL" },
+  cams: [
+    { id:"CAM 1", x:30, y:32, out:"hdmi", dir:"up" },
+    { id:"CAM 2", x:40, y:32, out:"sdi",  dir:"up" },
+    { id:"CAM 3", x:50, y:32, out:"sdi",  dir:"up" },
+  ],
+  zones: [
+    { shape:"rect", kind:"stage",   x:40, y:10, w:60, h:8, label:"DECORADO / SET" },
+    { shape:"rect", kind:"seating", x:40, y:22, w:26, h:6, label:"MESA PLATÓ" },
+  ],
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    hdmi: { nombre:"HDMI",   signal:"hdmi", limite:15,  eurM:1.5, conv:0, color:"--amber" },
+    sdi:  { nombre:"HD-SDI", signal:"sdi",  limite:100, eurM:3,   conv:0, color:"--cyan"  },
+  },
+  converters: {
+    sdi_hdmi: { nombre:"SDI→HDMI", tag:"S→H", from:"sdi",  to:"hdmi", eur:150 },
+    hdmi_sdi: { nombre:"HDMI→SDI", tag:"H→S", from:"hdmi", to:"sdi",  eur:180 },
+  },
+  convEur: 250,
+  budget: 700,
+};
+
+const SETTV_N3 = {
+  nombre:  { es:"Set de TV · Nivel 3", en:"TV Set · Level 3", eu:"TB Platoa · 3. maila" },
+  encargo: { es:"Plató mayor con mesa SDI y control en SALA APARTE: decorado y mesa arriba, cámaras abajo apuntando al set. Lleva cada cámara al patch de pared (a la derecha); los focos de suelo no estorban al cable.",
+             en:"Larger studio with an SDI desk and the gallery in a SEPARATE ROOM: set and desk at the top, cameras below aiming at the set. Take each camera to the wall patch (on the right); floor lights don't get in the cable's way.",
+             eu:"Plato handiagoa SDI mahaiarekin eta kontrola BESTE GELA batean: dekoratua eta mahaia goian, kamerak behean set-era begira. Eraman kamera bakoitza hormako patchera (eskuinean); lurreko fokuek ez diote kableari trabarik egiten." },
+  planoM:  { w:92, h:66 },
+  escalaPxM: 10.5,
+  mesa: { x:82, y:30, inputs:3, inFmt:"sdi", faces:"left", label:"CONTROL" },
+  cams: [
+    { id:"CAM 1", x:24, y:52, out:"sdi", dir:"up" },
+    { id:"CAM 2", x:44, y:56, out:"sdi", dir:"up" },
+    { id:"CAM 3", x:62, y:52, out:"sdi", dir:"up" },
+  ],
+  zones: [
+    { shape:"rect",   kind:"stage",   x:40, y:12, w:64, h:12, label:"DECORADO / SET" },
+    { shape:"rect",   kind:"seating", x:40, y:27, w:30, h:8,  label:"MESA PLATÓ" },
+    { shape:"circle", kind:"decor",   x:34, y:41, r:2.5, label:"FOCO" },
+    { shape:"circle", kind:"decor",   x:58, y:43, r:2.5, label:"FOCO" },
+  ],
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    sdi:   { nombre:"HD-SDI", signal:"sdi", limite:100, eurM:3,  conv:0, color:"--cyan"  },
+    fibra: { nombre:"Fibra",  signal:"sdi", limite:500, eurM:10, conv:2, color:"--fiber" },
+  },
+  converters: {},
+  convEur: 250,
+  budget: 1800,
+};
+
+const CONCIERTO_N3 = {
+  nombre:  { es:"Concierto · Nivel 3", en:"Concert · Level 3", eu:"Kontzertua · 3. maila" },
+  encargo: { es:"Arena enorme: distancias descomunales. Las cámaras del foso solo llegan por FIBRA; las de fondo, por SDI. Y una grúa inalámbrica en pista: coloca su RX dentro del alcance. Presupuesto grande, pero ojo.",
+             en:"Huge arena: massive distances. The pit cameras only reach on FIBRE; the rear ones on SDI. Plus a wireless jib on the floor: place its RX within range. Big budget, but be careful.",
+             eu:"Areto erraldoia: distantzia izugarriak. Hobiko kamerak ZUNTZAren bidez baino ez dira iristen; atzekoak SDI bidez. Gainera, haririk gabeko garabi bat pistan: jarri bere RX irismenaren barruan. Aurrekontu handia, baina kontuz." },
+  planoM:  { w:210, h:120 },
+  escalaPxM: 5.2,
+  mesa: { x:198, y:60, inputs:5, inFmt:"sdi", faces:"left" },
+  cams: [
+    { id:"CAM 1", x:38,  y:30, out:"sdi" },   // foso → fibra
+    { id:"CAM 2", x:38,  y:90, out:"sdi" },   // foso → fibra
+    { id:"CAM 3", x:186, y:30, out:"sdi" },   // fondo → SDI
+    { id:"CAM 4", x:186, y:90, out:"sdi" },   // fondo → SDI
+    { id:"CAM 5", x:64,  y:60, out:"sdi", wireless:true, rxFmt:"sdi", range:135, txEur:800 },  // grúa inalámbrica
+  ],
+  zones: [
+    { shape:"rect",   kind:"stage",   x:16,  y:60, w:24,  h:104, label:"ESCENARIO" },
+    { shape:"rect",   kind:"pit",     x:30,  y:60, w:4,   h:100, label:"BARRERA" },
+    { shape:"rect",   kind:"seating", x:114, y:60, w:138, h:100, label:"PÚBLICO (DE PIE)" },
+    { shape:"circle", kind:"column",  x:75,  y:6,   r:4, label:"TORRE PA" },
+    { shape:"circle", kind:"column",  x:75,  y:114, r:4, label:"TORRE PA" },
+    { shape:"circle", kind:"column",  x:150, y:6,   r:4, label:"TORRE PA" },
+    { shape:"circle", kind:"column",  x:150, y:114, r:4, label:"TORRE PA" },
+    { shape:"rect",   kind:"walk",    x:186, y:60, w:6,   h:104, label:"PASILLO" },
+  ],
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    sdi:   { nombre:"HD-SDI", signal:"sdi", limite:100, eurM:3,  conv:0, color:"--cyan"  },
+    fibra: { nombre:"Fibra",  signal:"sdi", limite:500, eurM:10, conv:2, color:"--fiber" },
+  },
+  converters: {},
+  convEur: 250,
+  budget: 5800,
+};
+
+const TEATRO_N4 = {
+  nombre:  { es:"Teatro · Nivel 4", en:"Theatre · Level 4", eu:"Antzokia · 4. maila" },
+  encargo: { es:"Producción 4K con cámaras REPOSICIONABLES: arrastra cada una dentro de su área de trabajo (recuadro punteado). A más resolución, menos distancia: 12G ~45 m, 6G ~70 m. Acercar una cámara puede dejarte usar un cable más barato; alejarla obliga a FIBRA o a un DECIMATOR (baja a HD para tirar de HD-SDI). Cuadra el presupuesto.",
+             en:"4K production with MOVABLE cameras: drag each one inside its working area (dashed box). Higher resolution, shorter reach: 12G ~45 m, 6G ~70 m. Moving a camera closer may let you use a cheaper cable; moving it away forces FIBRE or a DECIMATOR (drop to HD to run HD-SDI). Meet the budget.",
+             eu:"4K ekoizpena kamera MUGIGARRIEKIN: arrastatu bakoitza bere lan-eremuaren barruan (marra etenezko laukia). Bereizmen handiagoa, irismen laburragoa: 12G ~45 m, 6G ~70 m. Kamera bat gerturatzeak kable merkeago bat erabiltzen utz diezazuke; urruntzeak ZUNTZA edo DECIMATOR bat (HD-ra jaitsi HD-SDI erabiltzeko) behartzen du. Bete aurrekontua." },
+  freeCams: true,
+  planoM:  { w:120, h:72 },
+  escalaPxM: 8.5,
+  mesa: { x:106, y:36, inputs:4, inFmt:"sdi", inRes:"4k", faces:"left", label:"CABINA" },
+  cams: [
+    { id:"CAM 1", x:24, y:18, out:"sdi", res:"4k", area:{x:23,y:20,w:6,h:22} },   // frente-izq (junto al foso): lejos → fibra/Decimator
+    { id:"CAM 2", x:24, y:54, out:"sdi", res:"4k", area:{x:23,y:54,w:6,h:22} },   // frente-izq: lejos → fibra/Decimator
+    { id:"CAM 3", x:96, y:20, out:"sdi", res:"4k", area:{x:96,y:36,w:6,h:52} },   // pasillo lateral (junto a cabina): cerca → 12G
+    { id:"CAM 4", x:60, y:36, out:"sdi", res:"4k", area:{x:60,y:36,w:60,h:8} },   // pasillo CENTRAL, gran latitud: acércala (12G/6G) o aléjala (fibra/Decimator)
+  ],
+  zones: [
+    { shape:"rect", kind:"stage",   x:10, y:36, w:12, h:58, label:"ESCENARIO" },
+    { shape:"rect", kind:"pit",     x:20, y:36, w:6,  h:54, label:"FOSO" },
+    { shape:"rect", kind:"seating", x:60, y:22, w:64, h:14, label:"BUTACAS" },
+    { shape:"rect", kind:"walk",    x:60, y:36, w:64, h:10, label:"PASILLO CENTRAL" },
+    { shape:"rect", kind:"seating", x:60, y:50, w:64, h:14, label:"BUTACAS" },
+    { shape:"rect", kind:"walk",    x:96, y:36, w:8,  h:58, label:"PASILLO" },
+  ],
+  rampEur: 120, rampW: 6,
+  cableTypes: {
+    sdi:    { nombre:"HD-SDI",  signal:"sdi",              limite:100, eurM:3,  conv:0, color:"--cyan"  },
+    sdi6g:  { nombre:"6G-SDI",  signal:"sdi", res:"4k",    limite:70,  eurM:5,  conv:0, color:"--sdi6g"  },
+    sdi12g: { nombre:"12G-SDI", signal:"sdi", res:"4k",    limite:45,  eurM:7,  conv:0, color:"--sdi12g" },
+    fibra:  { nombre:"Fibra",   signal:"sdi", res:"4k",    limite:500, eurM:10, conv:2, color:"--fiber" },
+  },
+  converters: {},
+  convEur: 250,
+  decEur: 250,
+  budget: 2400,
+};
+
+const GAME = {
+  teatro:    { sub:{ es:"Empiezas con SDI y HDMI en un teatro pequeño. Al subir de nivel el recinto crece: aparece la fibra (SDI no llega) y luego los formatos mixtos (IP).",
+                     en:"Start with SDI and HDMI in a small theatre. As levels go up the venue grows: fibre appears (SDI won't reach) and then mixed formats (IP).",
+                     eu:"SDI eta HDMIrekin hasten zara antzoki txiki batean. Mailak igo ahala aretoa hazten da: zuntza agertzen da (SDI ez da iristen) eta gero formatu mistoak (IP)." }, niveles:[ TEATRO_N1, TEATRO_N2, TEATRO_N3, TEATRO_N4 ] },
+  concierto: { sub:{ es:"Grandes distancias (fibra), público de pie enorme, torres de PA. Escenario a la izquierda.",
+                     en:"Long distances (fibre), huge standing crowd, PA towers. Stage on the left.",
+                     eu:"Distantzia luzeak (zuntza), jende ugari zutik, PA dorreak. Oholtza ezkerrean." }, niveles:[ CONCIERTO_N1, CONCIERTO_N2, CONCIERTO_N3 ] },
+  setTV:     { sub:{ es:"Decorado y mesa arriba, cámaras abajo apuntando al set. Control en sala aparte (patch de pared).",
+                     en:"Set and desk at the top, cameras below aiming at the set. Gallery in a separate room (wall patch).",
+                     eu:"Dekoratua eta mahaia goian, kamerak behean set-era begira. Kontrola beste gela batean (hormako patcha)." }, niveles:[ SETTV_N1, SETTV_N2, SETTV_N3 ] },
+};
+
+/* ============================================================
+   ESTADO (se reinicia en cargarNivel)
+   ============================================================ */
+const SVGNS="http://www.w3.org/2000/svg";
+const svg=document.getElementById("plano");
+svg.setAttribute("preserveAspectRatio","xMidYMid meet");
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+
+let LEVEL=null, S=10, inputs=[], cams=[], VBW=0, VBH=0;
+const m=v=>v*S;                                   // metros → px de dibujo (lee la S actual)
+
+let cables=[], camConv=[], inConv=[], ramps=[], rx={}, camDec=[];   // rx[ci]={x,y}=receptor inalámbrico; camDec[ci]=true si hay Decimator
+let curType=null, curConv=null, mode="cable", locked=false;
+const ctOf=ci=>LEVEL.cableTypes[cables[ci].type];
+
+/* ============================================================
+   GEOMETRÍA
+   ============================================================ */
+function segCircle(a,b,c,r){
+  const dx=b.x-a.x, dy=b.y-a.y, l2=dx*dx+dy*dy||1e-9;
+  let t=((c.x-a.x)*dx+(c.y-a.y)*dy)/l2; t=Math.max(0,Math.min(1,t));
+  return Math.hypot(a.x+t*dx-c.x, a.y+t*dy-c.y)<=r;
 }
-
-/* ---------- 2. GIROSCOPIO · DeviceOrientation ---------- */
-let evtCount=0;              // nº de eventos recibidos (diagnóstico)
-let dbgLine="";             // texto de diagnóstico en pantalla
-function dbg(t){dbgLine=t;$("#dbg").textContent=t;}
-
-async function startOrientation(){
-  const hasReq=(typeof DeviceOrientationEvent!=="undefined" &&
-                typeof DeviceOrientationEvent.requestPermission==="function");
-  let permState="n/a";      // en Android normalmente no hay requestPermission
-  if(hasReq){
-    try{
-      permState=await DeviceOrientationEvent.requestPermission();
-    }catch(e){permState="error:"+e.name;}
-  }
-
-  const onOrient=(ev)=>{
-    evtCount++;
-    // beta/gamma son los ejes que usamos para rotar. En iOS pueden llegar
-    // sin alpha; en Android a veces solo llegan vía 'deviceorientationabsolute'.
-    const hasBG=(ev.beta!=null || ev.gamma!=null);
-    if(hasBG){
-      sensorLive=true;
-      const b=(ev.beta ==null?0:ev.beta);
-      const g=(ev.gamma==null?0:ev.gamma);
-      let a=ev.alpha;
-      if(a==null && typeof ev.webkitCompassHeading==="number") a=360-ev.webkitCompassHeading;
-      if(a==null) a=0;
-      orient.a=a; orient.b=b; orient.g=g;
-      $("#oa").textContent=a.toFixed(1);
-      $("#ob").textContent=b.toFixed(1);
-      $("#og").textContent=g.toFixed(1);
-    }
-    // diagnóstico en vivo: se ve si llegan eventos pero sin datos útiles
-    dbg(`evt:${evtCount} perm:${permState} a:${ev.alpha==null?"·":"ok"} `+
-        `b:${ev.beta==null?"·":"ok"} g:${ev.gamma==null?"·":"ok"} abs:${ev.absolute?"y":"n"}`);
+function segRect(a,b,o){
+  const x0=o.x-o.w/2,x1=o.x+o.w/2,y0=o.y-o.h/2,y1=o.y+o.h/2;
+  const inside=p=>p.x>=x0&&p.x<=x1&&p.y>=y0&&p.y<=y1;
+  if(inside(a)||inside(b))return true;
+  const ss=(p,q,r,s)=>{
+    const d=(q.x-p.x)*(s.y-r.y)-(q.y-p.y)*(s.x-r.x); if(!d)return false;
+    const t=((r.x-p.x)*(s.y-r.y)-(r.y-p.y)*(s.x-r.x))/d;
+    const u=((r.x-p.x)*(q.y-p.y)-(r.y-p.y)*(q.x-p.x))/d;
+    return t>=0&&t<=1&&u>=0&&u<=1;
   };
-
-  window.addEventListener("deviceorientation",onOrient);          // sin capture
-  window.addEventListener("deviceorientationabsolute",onOrient);
-
-  // Reintento de permiso: en iOS, si el 1er requestPermission no disparó
-  // eventos (toggle "Movimiento y orientación" off), avisamos con causa.
-  setTimeout(()=>{
-    if(evtCount===0){
-      if(hasReq && permState==="granted"){
-        dbg("permiso OK pero 0 eventos → Ajustes › Safari › Movimiento y orientación");
-        msg("SENSOR BLOQUEADO EN AJUSTES · usa arrastre");
-      }else if(hasReq && permState!=="granted"){
-        dbg("permiso: "+permState);
-        msg("PERMISO DE SENSOR DENEGADO · usa arrastre");
-      }else{
-        dbg("0 eventos · sin requestPermission (Android)");
-        msg("SIN GIROSCOPIO · usa arrastre táctil");
-      }
-      setTimeout(()=>msg(""),3600);
-    }else if(!sensorLive){
-      // llegan eventos pero beta/gamma null → caso Chrome que describes
-      dbg(`${evtCount} eventos pero beta/gamma null → sensor no expone orientación`);
-      msg("SENSOR SIN ORIENTACIÓN · usa arrastre");
-      setTimeout(()=>msg(""),3600);
-    }
-  },1400);
+  const c=[{x:x0,y:y0},{x:x1,y:y0},{x:x1,y:y1},{x:x0,y:y1}];
+  return ss(a,b,c[0],c[1])||ss(a,b,c[1],c[2])||ss(a,b,c[2],c[3])||ss(a,b,c[3],c[0]);
+}
+function zoneBlock(z){                             // cómo se comporta cada zona ante el cable
+  if(z.kind==="aisle") return "ramp";              // cruzable con pasacables (de momento sin usar)
+  if(z.kind==="stage"||z.kind==="walk"||z.kind==="decor") return "none";  // decor / pasillo libre: no bloquea (p.ej. focos de suelo)
+  return "hard";                                   // pit, seating, wall, column…
 }
 
-/* ---------- 3. ESCENA 3D · WebGL / Three.js ---------- */
-const glCanvas=$("#gl");
-const renderer=new THREE.WebGLRenderer({canvas:glCanvas,alpha:true,antialias:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-const scene=new THREE.Scene();
-const camera=new THREE.PerspectiveCamera(42,1,0.1,100);
-camera.position.set(0,0,6);
-
-const key=new THREE.DirectionalLight(0xffffff,1.1); key.position.set(3,4,5); scene.add(key);
-const rim=new THREE.DirectionalLight(0x3fe0d0,0.7); rim.position.set(-4,-2,-3); scene.add(rim);
-scene.add(new THREE.AmbientLight(0x223330,0.9));
-
-const world=new THREE.Group(); scene.add(world);
-
-/* --- objeto A: "ficha técnica" flotante (tarjeta + wireframe) --- */
-const ficha=new THREE.Group();
-const card=new THREE.Mesh(
-  new THREE.BoxGeometry(3.1,1.9,0.06),
-  new THREE.MeshStandardMaterial({color:0x0f1513,metalness:.3,roughness:.55})
-);
-ficha.add(card);
-const edge=new THREE.LineSegments(
-  new THREE.EdgesGeometry(new THREE.BoxGeometry(3.14,1.94,0.1)),
-  new THREE.LineBasicMaterial({color:0x3fe0d0})
-);
-ficha.add(edge);
-// "lente" que sobresale de la tarjeta — guiño audiovisual
-const lens=new THREE.Mesh(
-  new THREE.CylinderGeometry(0.42,0.5,0.55,40),
-  new THREE.MeshStandardMaterial({color:0x090c0b,metalness:.8,roughness:.25})
-);
-lens.rotation.x=Math.PI/2; lens.position.set(-0.95,0,0.35);
-ficha.add(lens);
-const ring=new THREE.Mesh(
-  new THREE.TorusGeometry(0.44,0.03,12,40),
-  new THREE.MeshStandardMaterial({color:0xffb427,metalness:.6,roughness:.3})
-);
-ring.position.set(-0.95,0,0.6);
-ficha.add(ring);
-world.add(ficha);
-
-/* --- objeto B: nube voxel para el modo "selfie" (cubización) --- */
-const voxels=new THREE.Group();
-const vGeo=new THREE.BoxGeometry(0.34,0.34,0.34);
-for(let i=0;i<160;i++){
-  const m=new THREE.Mesh(vGeo,new THREE.MeshStandardMaterial({
-    color:new THREE.Color().setHSL(0.48+Math.random()*0.08,0.6,0.4+Math.random()*0.3),
-    metalness:.2,roughness:.7
-  }));
-  const r=1.6+Math.random()*0.9, th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
-  m.position.set(r*Math.sin(ph)*Math.cos(th), r*Math.sin(ph)*Math.sin(th)-0.2, r*Math.cos(ph));
-  m.userData.spin=(Math.random()-0.5)*0.02;
-  voxels.add(m);
-}
-voxels.visible=false; world.add(voxels);
-
-/* --- objeto C: retícula técnica (grid + ejes) --- */
-const gridG=new THREE.Group();
-const grid=new THREE.GridHelper(8,16,0x3fe0d0,0x18302c);
-grid.rotation.x=Math.PI/2; gridG.add(grid);
-const axes=new THREE.AxesHelper(2.4); gridG.add(axes);
-gridG.visible=false; world.add(gridG);
-
-function setMode(m){
-  MODE=m;
-  ficha.visible=(m==="ficha");
-  voxels.visible=(m==="voxel");
-  gridG.visible=(m==="grid");
-  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.mode===m));
-}
-document.querySelectorAll(".tab").forEach(t=>
-  t.addEventListener("click",()=>setMode(t.dataset.mode)));
-
-/* ---------- resize ---------- */
-function resize(){
-  const w=window.innerWidth,h=window.innerHeight;
-  renderer.setSize(w,h,false);
-  camera.aspect=w/h; camera.updateProjectionMatrix();
-}
-window.addEventListener("resize",resize); resize();
-
-/* ---------- timecode ---------- */
-let f=0;
-setInterval(()=>{
-  f++;const tf=f%25,s=Math.floor(f/25)%60,mn=Math.floor(f/1500)%60,hh=Math.floor(f/90000)%24;
-  const p=n=>String(n).padStart(2,"0");
-  $("#tc").textContent=`${p(hh)}:${p(mn)}:${p(s)}:${p(tf)}`;
-},40);
-
-/* ---------- loop ---------- */
-function loop(){
-  requestAnimationFrame(loop);
-  if(sensorLive){
-    // suavizado exponencial del sensor → evita jitter en el render
-    smooth.b+=(orient.b-smooth.b)*0.12;
-    smooth.g+=(orient.g-smooth.g)*0.12;
-    // mapeo IMU → rotación de la escena (orbitar moviendo el móvil)
-    world.rotation.y=THREE.MathUtils.degToRad(smooth.g)*1.4;
-    world.rotation.x=THREE.MathUtils.degToRad(smooth.b-45)*0.6;
-  }else{
-    // fallback: rotación por arrastre táctil
-    world.rotation.y+=(drag.ry-world.rotation.y)*0.15;
-    world.rotation.x+=(drag.rx-world.rotation.x)*0.15;
+function inHardZone(x,y){                          // ¿el punto cae en zona no pisable (público, foso, muro)?
+  for(const z of (LEVEL.zones||[])){
+    if(zoneBlock(z)!=="hard")continue;
+    if(z.shape==="circle"){ if(Math.hypot(x-z.x,y-z.y)<=(z.r||z.w/2))return true; }
+    else if(x>=z.x-z.w/2&&x<=z.x+z.w/2&&y>=z.y-z.h/2&&y<=z.y+z.h/2)return true;
   }
-
-  ficha.position.y=Math.sin(Date.now()*0.0012)*0.12;   // flotación
-  ring.rotation.z+=0.01;
-  if(voxels.visible){voxels.rotation.y+=0.004;voxels.children.forEach(v=>v.rotation.x+=v.userData.spin);}
-  renderer.render(scene,camera);
+  return false;
 }
-loop();
 
-/* ---------- fallback táctil (si no hay giroscopio) ---------- */
-const stage=$("#stage");
-function dragStart(x,y){drag.on=true;drag.x=x;drag.y=y;}
-function dragMove(x,y){
-  if(!drag.on||sensorLive)return;
-  drag.ry+=(x-drag.x)*0.008;
-  drag.rx+=(y-drag.y)*0.008;
-  drag.x=x;drag.y=y;
+function el(tag,attrs={},parent){
+  const e=document.createElementNS(SVGNS,tag);
+  for(const k in attrs)e.setAttribute(k,attrs[k]);
+  if(parent)parent.appendChild(e);
+  return e;
 }
-function dragEnd(){drag.on=false;}
-stage.addEventListener("touchstart",e=>{const t=e.touches[0];dragStart(t.clientX,t.clientY);},{passive:true});
-stage.addEventListener("touchmove",e=>{const t=e.touches[0];dragMove(t.clientX,t.clientY);},{passive:true});
-stage.addEventListener("touchend",dragEnd);
-stage.addEventListener("mousedown",e=>dragStart(e.clientX,e.clientY));
-window.addEventListener("mousemove",e=>dragMove(e.clientX,e.clientY));
-window.addEventListener("mouseup",dragEnd);
 
-/* ---------- arranque tras gesto ---------- */
-$("#go").addEventListener("click",async()=>{
-  $("#gate").style.display="none";
-  // El permiso de orientación DEBE pedirse primero, mientras la activación
-  // de usuario (transient activation) del clic sigue viva. getUserMedia
-  // suspende la ejecución esperando su propio diálogo y consumiría esa
-  // ventana, provocando que requestPermission() devuelva 'denied' sin
-  // llegar a mostrarse. Orden correcto: sensores → cámara.
-  await startOrientation();
-  await startCamera();
-  setMode("ficha");
+const content=el("g",{},svg);      // grupo que se escala/desplaza con el zoom
+const gStatic=el("g",{},content);
+const gCables=el("g",{},content);
+const gTemp=el("g",{},content);
+const gPorts=el("g",{},content);
+
+/* ============================================================
+   DIBUJO ESTÁTICO
+   ============================================================ */
+function drawStatic(){
+  gStatic.innerHTML=""; gPorts.innerHTML=""; gTemp.innerHTML="";
+  el("rect",{x:0,y:0,width:m(LEVEL.planoM.w),height:m(LEVEL.planoM.h),fill:css("--bg")},gStatic);
+  for(let x=0;x<=LEVEL.planoM.w;x+=10)
+    el("line",{x1:m(x),y1:0,x2:m(x),y2:m(LEVEL.planoM.h),stroke:css("--grid"),"stroke-width":1},gStatic);
+  for(let y=0;y<=LEVEL.planoM.h;y+=10)
+    el("line",{x1:0,y1:m(y),x2:m(LEVEL.planoM.w),y2:m(y),stroke:css("--grid"),"stroke-width":1},gStatic);
+
+  // zonas
+  (LEVEL.zones||[]).forEach(z=>{
+    if(z.shape==="circle"){
+      el("circle",{cx:m(z.x),cy:m(z.y),r:m(z.r),fill:css("--line"),stroke:css("--dim"),"stroke-width":1.5},gStatic);
+      el("circle",{cx:m(z.x),cy:m(z.y),r:m(z.r)*0.45,fill:"none",stroke:css("--dim"),"stroke-width":1},gStatic);
+      if(z.label){ const t=el("text",{x:m(z.x),y:m(z.y+z.r)+13,fill:css("--dim"),"font-size":8.5,"letter-spacing":"1","text-anchor":"middle"},gStatic); t.textContent=tl(z.label); }
+      return;
+    }
+    let fill="rgba(92,107,103,.12)", stroke=css("--dim"), dash=null, lbl=css("--dim");
+    if(z.kind==="stage"){ fill="none"; stroke=css("--cyan"); lbl=css("--cyan"); }
+    else if(z.kind==="aisle"||z.kind==="walk"){ fill="none"; stroke=css("--line"); dash="4 6"; lbl=css("--dim"); }  // pasillo neutro
+    const a={x:m(z.x-z.w/2),y:m(z.y-z.h/2),width:m(z.w),height:m(z.h),rx:3,fill:fill,stroke:stroke,"stroke-width":1.4};
+    if(dash)a["stroke-dasharray"]=dash;
+    el("rect",a,gStatic);
+    if(z.label){
+      const t=el("text",{x:m(z.x),y:m(z.y)+3,fill:lbl,"font-size":11,"letter-spacing":"2","text-anchor":"middle"},gStatic);
+      t.textContent=tl(z.label);
+    }
+  });
+
+  // barra de escala (20 m)
+  const bx=m(5), by=m(LEVEL.planoM.h-4);
+  el("line",{x1:bx,y1:by,x2:bx+m(20),y2:by,stroke:css("--dim"),"stroke-width":2},gStatic);
+  el("line",{x1:bx,y1:by-5,x2:bx,y2:by+5,stroke:css("--dim"),"stroke-width":2},gStatic);
+  el("line",{x1:bx+m(20),y1:by-5,x2:bx+m(20),y2:by+5,stroke:css("--dim"),"stroke-width":2},gStatic);
+  const sl=el("text",{x:bx+m(10),y:by-8,fill:css("--dim"),"font-size":11,"text-anchor":"middle"},gStatic);
+  sl.textContent="20 m";
+
+  // mesa / cabina (faces "top"=entradas arriba; "left"=entradas a la izquierda, mirando a la sala)
+  const faces=LEVEL.mesa.faces||"top", nin=nInputs();
+  const mw = faces==="left"?16:26, mh = faces==="left"?(nin*6+6):10;
+  el("rect",{x:m(LEVEL.mesa.x-mw/2),y:m(LEVEL.mesa.y-mh/2),width:m(mw),height:m(mh),fill:css("--panel"),stroke:css("--line"),"stroke-width":1.5,rx:3},gStatic);
+  const ml=el("text",{x:m(LEVEL.mesa.x+(faces==="left"?2:0)),y:m(LEVEL.mesa.y)+3,fill:css("--dim"),"font-size":8,"letter-spacing":"1","text-anchor":"middle"},gStatic);
+  ml.textContent=tl(LEVEL.mesa.label||"CABINA");
+  inputs.forEach((p,i)=>{
+    const fc=fmtColor(inFmtOf(i));
+    el("circle",{cx:m(p.x),cy:m(p.y),r:8,fill:css("--bg"),stroke:fc,"stroke-width":1.8,"data-in":i,class:"inport"},gPorts);
+    const lx=faces==="left"?m(p.x)+13:m(p.x), ly=faces==="left"?m(p.y)+3:m(p.y)-13, an=faces==="left"?"start":"middle";
+    const t=el("text",{x:lx,y:ly,fill:fc,"font-size":9,"text-anchor":an},gStatic);
+    t.textContent="IN"+(i+1)+"·"+String(inFmtOf(i)).toUpperCase();
+  });
+
+  // cámaras (símbolo de plano: cuerpo + triángulo de visión hacia el escenario, a la izquierda)
+  cams.forEach((c,i)=>{
+    if(c.wireless) el("circle",{cx:m(c.x),cy:m(c.y),r:m(c.range),fill:"none",stroke:css("--line"),"stroke-width":1,"stroke-dasharray":"2 6"},gStatic);  // alcance RF (guía)
+    const dir=c.dir||"left";   // hacia dónde mira (el triángulo de visión)
+    const fov = dir==="up"
+      ? `M${m(c.x)},${m(c.y-1.8)} L${m(c.x-3)},${m(c.y-6.8)} L${m(c.x+3)},${m(c.y-6.8)} Z`
+      : `M${m(c.x-1.8)},${m(c.y)} L${m(c.x-6.5)},${m(c.y-3)} L${m(c.x-6.5)},${m(c.y+3)} Z`;
+    el("path",{d:fov,fill:"rgba(63,224,208,.10)",stroke:css("--cyan"),"stroke-width":1},gStatic);
+    el("rect",{x:m(c.x-1.8),y:m(c.y-1.8),width:m(3.8),height:m(3.6),rx:m(0.5),fill:css("--panel"),stroke:css("--cyan"),"stroke-width":1.7},gStatic);
+    if(LEVEL.freeCams&&!locked){                          // cámara reposicionable: área de trabajo + anillo + tirador
+      const a=c.area||LEVEL.camArea;
+      if(a) el("rect",{x:m(a.x-a.w/2),y:m(a.y-a.h/2),width:m(a.w),height:m(a.h),rx:m(1),fill:"rgba(63,224,208,.05)",stroke:css("--cyan"),"stroke-width":1,"stroke-dasharray":"2 4",opacity:.5},gStatic);
+      el("circle",{cx:m(c.x),cy:m(c.y),r:m(2.6),fill:"none",stroke:css("--cyan"),"stroke-width":1,"stroke-dasharray":"1.5 2.5",opacity:.7},gStatic);
+      el("circle",{cx:m(c.x),cy:m(c.y),r:14,fill:"transparent",style:"cursor:move","data-cam":i,class:"camdrag"},gPorts);
+    }
+    const ly = dir==="up" ? m(c.y)+m(4.8) : m(c.y)-m(3.8);
+    const lb=el("text",{x:m(c.x),y:ly,fill:css("--txt"),"font-size":11,"letter-spacing":"0.5","text-anchor":"middle"},gStatic);
+    lb.textContent=c.id+(c.wireless?" · RF→"+c.rxFmt.toUpperCase():" · "+c.out.toUpperCase())+(c.res==="4k"?" 4K":"");
+    if(c.wireless){
+      const tx=el("text",{x:m(c.x),y:m(c.y)+m(4),fill:css("--amber"),"font-size":8,"letter-spacing":"1","text-anchor":"middle"},gStatic); tx.textContent="TX";
+    }else{
+      el("circle",{cx:m(c.port.x),cy:m(c.port.y),r:6,fill:css("--cyan")},gPorts);
+      el("circle",{cx:m(c.port.x),cy:m(c.port.y),r:16,fill:"transparent",style:"cursor:grab","data-cam":i,class:"outport"},gPorts);
+    }
+  });
+}
+
+/* ============================================================
+   CABLES + VALIDACIÓN
+   ============================================================ */
+function pathPoints(ci){ const c=cables[ci], src=cams[ci].wireless?rx[ci]:cams[ci].port; return [src, ...c.wps, inputs[c.input]]; }
+function pathLen(ci){ const p=pathPoints(ci); let L=0; for(let i=0;i<p.length-1;i++)L+=dist(p[i],p[i+1]); return L; }
+const aisleAxis=z=> z.w>=z.h ? "x" : "y";          // eje largo del pasillo (el pasacables cruza el corto)
+const inRampAt=(zi,z,x,y)=>{ const c=aisleAxis(z)==="x"?x:y; return ramps.some(r=>r.zi===zi && Math.abs(c-r.along)<=LEVEL.rampW/2); };
+function crossingCoveredByRamp(a,b,z,zi){           // ¿el cruce del pasillo va por un pasacables?
+  const x0=z.x-z.w/2,x1=z.x+z.w/2,y0=z.y-z.h/2,y1=z.y+z.h/2, N=24;
+  for(let s=0;s<=N;s++){
+    const t=s/N, x=a.x+(b.x-a.x)*t, y=a.y+(b.y-a.y)*t;
+    if(x>=x0&&x<=x1&&y>=y0&&y<=y1 && !inRampAt(zi,z,x,y)) return false;
+  }
+  return true;
+}
+function crossHard(ci){
+  const p=pathPoints(ci);
+  for(let i=0;i<p.length-1;i++) for(const z of (LEVEL.zones||[]))
+    if(zoneBlock(z)==="hard" && (z.shape==="circle"?segCircle(p[i],p[i+1],z,z.r):segRect(p[i],p[i+1],z))) return true;
+  return false;
+}
+function crossAisleBare(ci){
+  const p=pathPoints(ci), zs=LEVEL.zones||[];
+  for(let i=0;i<p.length-1;i++) for(let zi=0;zi<zs.length;zi++){
+    const z=zs[zi];
+    if(zoneBlock(z)==="ramp" && segRect(p[i],p[i+1],z) && !crossingCoveredByRamp(p[i],p[i+1],z,zi)) return true;
+  }
+  return false;
+}
+function cableCross(ci){ return crossHard(ci)||crossAisleBare(ci); }
+
+function redrawCables(){
+  gCables.innerHTML="";
+  ramps.forEach(r=>{
+    const z=LEVEL.zones[r.zi]; if(!z)return;
+    let rx,ry,rw,rh;
+    if(aisleAxis(z)==="x"){ rx=r.along-LEVEL.rampW/2; rw=LEVEL.rampW; ry=z.y-z.h/2; rh=z.h; }
+    else { ry=r.along-LEVEL.rampW/2; rh=LEVEL.rampW; rx=z.x-z.w/2; rw=z.w; }
+    el("rect",{x:m(rx),y:m(ry),width:m(rw),height:m(rh),rx:2,fill:"rgba(255,180,39,.22)",stroke:css("--amber"),"stroke-width":1.5,"pointer-events":"none"},gCables);
+  });
+  cables.forEach((c,ci)=>{
+    if(!c)return;
+    const p=pathPoints(ci), len=pathLen(ci), ct=ctOf(ci);
+    const fmtOk=(ct.signal===effOut(ci) && ct.signal===effIn(c.input));
+    const invalid=cableCross(ci)||len>ct.limite||!fmtOk||resProblem(ci,ct)!==null;
+    const col=(locked&&invalid)?css("--red"):css(ct.color);
+    for(let i=0;i<p.length-1;i++){
+      const a=p[i], b=p[i+1];
+      el("line",{x1:m(a.x),y1:m(a.y),x2:m(b.x),y2:m(b.y),stroke:col,"stroke-width":3.5},gCables);
+      el("line",{x1:m(a.x),y1:m(a.y),x2:m(b.x),y2:m(b.y),stroke:"transparent","stroke-width":22,"data-cam":ci,"data-seg":i,class:"seg",style:"cursor:crosshair"},gCables);
+    }
+    if(ct.conv>0){
+      [p[0],p[p.length-1]].forEach(q=>{
+        el("rect",{x:m(q.x)-9,y:m(q.y)-9,width:18,height:18,rx:3,fill:css("--panel"),stroke:col,"stroke-width":2},gCables);
+        const t=el("text",{x:m(q.x),y:m(q.y)+4,fill:col,"font-size":11,"font-weight":"bold","text-anchor":"middle"},gCables); t.textContent="C";
+      });
+    }
+    c.wps.forEach((w,wi)=>{
+      el("circle",{cx:m(w.x),cy:m(w.y),r:6,fill:css("--bg"),stroke:col,"stroke-width":2},gCables);
+      el("circle",{cx:m(w.x),cy:m(w.y),r:15,fill:"transparent","data-cam":ci,"data-wp":wi,class:"wp",style:"cursor:grab"},gCables);
+    });
+    const cx=p.reduce((s,q)=>s+q.x,0)/p.length, cy=p.reduce((s,q)=>s+q.y,0)/p.length;
+    el("rect",{x:m(cx)-46,y:m(cy)-13,width:92,height:22,rx:4,fill:css("--bg"),stroke:col,"stroke-width":1,opacity:.92},gCables);
+    const t=el("text",{x:m(cx),y:m(cy)+3,fill:col,"font-size":13,"font-weight":"bold","text-anchor":"middle"},gCables);
+    t.textContent=len.toFixed(0)+" m · "+cableTag(ct);
+  });
+  // insignias de conversores
+  const badge=(pos,tag,bad)=>{
+    const c=(locked&&bad)?css("--red"):css("--txt");
+    el("rect",{x:m(pos.x)+7,y:m(pos.y)-22,width:34,height:16,rx:3,fill:css("--panel"),stroke:c,"stroke-width":1},gCables);
+    const t=el("text",{x:m(pos.x)+24,y:m(pos.y)-10,fill:c,"font-size":10,"font-weight":"bold","text-anchor":"middle"},gCables); t.textContent=tag;
+  };
+  camConv.forEach((k,ci)=>{ if(k){const cv=LEVEL.converters[k]; badge(cams[ci].port, cv.tag, cv.from!==cams[ci].out);} });
+  inConv.forEach((k,j)=>{ if(k){const cv=LEVEL.converters[k]; badge(inputs[j], cv.tag, cv.to!==inFmtOf(j));} });
+  // Decimator en cámara (indicador de resolución resultante)
+  camDec.forEach((d,ci)=>{ if(!d)return; const c=cams[ci];
+    el("rect",{x:m(c.x)+7,y:m(c.y)+6,width:56,height:15,rx:3,fill:css("--panel"),stroke:css("--fiber"),"stroke-width":1.2,"pointer-events":"none"},gCables);
+    const t=el("text",{x:m(c.x)+35,y:m(c.y)+17,fill:css("--fiber"),"font-size":9,"font-weight":"bold","text-anchor":"middle","pointer-events":"none"},gCables); t.textContent="DEC "+(effRes(ci)==="4k"?"↑4K":"↓HD");
+  });
+  // cámaras inalámbricas: enlace RF + receptor RX (con su puerto de salida)
+  cams.forEach((cam,ci)=>{
+    if(!cam.wireless || !rx[ci]) return;
+    const r=rx[ci], d=dist(cam,r), bad=locked && d>cam.range;
+    const col=bad?css("--red"):css("--amber");
+    el("line",{x1:m(cam.x),y1:m(cam.y),x2:m(r.x),y2:m(r.y),stroke:col,"stroke-width":1.5,"stroke-dasharray":"2 4","pointer-events":"none"},gCables);
+    // distancia RF en metros (etiqueta en el enlace)
+    const mx=(cam.x+r.x)/2, my=(cam.y+r.y)/2;
+    el("rect",{x:m(mx)-28,y:m(my)-12,width:56,height:20,rx:4,fill:css("--bg"),stroke:col,"stroke-width":1,opacity:.92,"pointer-events":"none"},gCables);
+    const dt=el("text",{x:m(mx),y:m(my)+3,fill:col,"font-size":12,"font-weight":"bold","text-anchor":"middle","pointer-events":"none"},gCables); dt.textContent=d.toFixed(0)+" m";
+    // caja RX con su formato de salida (RX·SDI / RX·HDMI)
+    el("rect",{x:m(r.x)-19,y:m(r.y)-9,width:38,height:18,rx:3,fill:css("--panel"),stroke:col,"stroke-width":1.5,"pointer-events":"none"},gCables);
+    const t=el("text",{x:m(r.x),y:m(r.y)+4,fill:col,"font-size":9,"font-weight":"bold","text-anchor":"middle","pointer-events":"none"},gCables); t.textContent="RX·"+cam.rxFmt.toUpperCase();
+    el("circle",{cx:m(r.x),cy:m(r.y),r:16,fill:"transparent",style:"cursor:grab","data-cam":ci,class:"outport"},gCables);
+  });
+}
+function effOut(ci){
+  const cam=cams[ci];
+  if(cam.wireless) return cam.rxFmt;                 // el receptor RX entrega este formato
+  const k=camConv[ci]; if(!k) return cam.out;
+  const cv=LEVEL.converters[k]; return cv.from===cam.out ? cv.to : null;
+}
+const nInputs=()=> Array.isArray(LEVEL.mesa.inputs) ? LEVEL.mesa.inputs.length : LEVEL.mesa.inputs;
+const inFmtOf=j=> Array.isArray(LEVEL.mesa.inputs) ? LEVEL.mesa.inputs[j] : LEVEL.mesa.inFmt;   // formato nativo de la entrada j
+const fmtColor=f=> f==="sdi"?css("--cyan") : f==="hdmi"?css("--amber") : f==="ip"?css("--eth") : css("--dim");
+function effIn(j){
+  const base=inFmtOf(j);
+  const k=inConv[j]; if(!k) return base;
+  const cv=LEVEL.converters[k]; return cv.to===base ? cv.from : null;   // el conversor debe entregar el formato de la entrada
+}
+/* --- resolución (HD / 4K) --- */
+const resRank={hd:0,"4k":1};
+const camRes=ci=>cams[ci].res||"hd";
+function effRes(ci){ const nat=camRes(ci); return camDec[ci] ? (nat==="4k"?"hd":"4k") : nat; }   // el Decimator invierte la resolución
+const cableRes=ct=>ct.res||"hd";                          // resolución máxima que transporta el cable
+const CTAG={"HD-SDI":"HD","6G-SDI":"6G","12G-SDI":"12G","Fibra":"FIB","Ethernet":"ETH","HDMI":"HDMI"};
+const cableTag=ct=>CTAG[ct.nombre]||ct.nombre;            // etiqueta corta del cable, junto a los metros
+const mesaRes=()=>LEVEL.mesa.inRes||"hd";                  // resolución de la mesa (acepta hasta esa)
+function resProblem(ci,ct){                                // devuelve clave de problema de resolución, o null
+  const er=effRes(ci);
+  if(er==="4k" && cableRes(ct)!=="4k") return "cable";     // 4K por un cable que no lo transporta
+  if(resRank[er] > resRank[mesaRes()]) return "mesa";      // la mesa no acepta esa resolución
+  return null;
+}
+
+/* ============================================================
+   INTERACCIÓN (pointer = táctil + ratón)
+   ============================================================ */
+let drag=null, pinch=null;
+const pointers=new Map();
+const zoom={k:1,tx:0,ty:0};
+
+function toSvg(evt){ const pt=svg.createSVGPoint(); pt.x=evt.clientX; pt.y=evt.clientY; return pt.matrixTransform(content.getScreenCTM().inverse()); }
+function toVB(cx,cy){ const pt=svg.createSVGPoint(); pt.x=cx; pt.y=cy; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+function applyZoom(){
+  zoom.k=Math.max(1,Math.min(6,zoom.k));
+  zoom.tx=Math.max(VBW*(1-zoom.k),Math.min(0,zoom.tx));
+  zoom.ty=Math.max(VBH*(1-zoom.k),Math.min(0,zoom.ty));
+  content.setAttribute("transform",`translate(${zoom.tx} ${zoom.ty}) scale(${zoom.k})`);
+}
+const usedInputs=()=>cables.filter(Boolean).map(c=>c.input);
+const d2=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const mid=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
+
+function startPinch(){
+  if(drag){ if(drag.kind==="new")gTemp.innerHTML=""; drag=null; }
+  const [a,b]=[...pointers.values()], mv=toVB(mid(a,b).x,mid(a,b).y);
+  pinch={ d0:d2(a,b), k0:zoom.k, L:{x:(mv.x-zoom.tx)/zoom.k, y:(mv.y-zoom.ty)/zoom.k} };
+}
+function updatePinch(){
+  const [a,b]=[...pointers.values()]; if(!a||!b)return;
+  const d=d2(a,b); if(d<1)return;
+  zoom.k=Math.max(1,Math.min(6,pinch.k0*(d/pinch.d0)));
+  const mv=toVB(mid(a,b).x,mid(a,b).y);
+  zoom.tx=mv.x-zoom.k*pinch.L.x; zoom.ty=mv.y-zoom.k*pinch.L.y; applyZoom();
+}
+
+svg.addEventListener("pointerdown",e=>{
+  if(!LEVEL)return;
+  try{svg.setPointerCapture(e.pointerId);}catch(_){}
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===2){ startPinch(); return; }
+  if(pointers.size>2) return;
+  if(locked){ drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return; }
+  const t=e.target;
+  if(LEVEL.freeCams && t.classList.contains("camdrag")){ // reposicionar cámara (niveles altos)
+    drag={kind:"movecam",ci:+t.dataset.cam}; return;
+  }
+  if(mode==="conv" && curConv){                         // colocar conversor en cualquier puerto
+    if(t.classList.contains("outport")){ const ci=+t.dataset.cam; camConv[ci]=(camConv[ci]===curConv?null:curConv); redrawCables(); updateHUD(); return; }
+    if(t.classList.contains("inport")){ const j=+t.dataset.in; inConv[j]=(inConv[j]===curConv?null:curConv); redrawCables(); updateHUD(); return; }
+    drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
+  }
+  if(mode==="ramp"){                                    // colocar/quitar pasacables tocando un pasillo
+    const p=toSvg(e), mx=p.x/S, my=p.y/S, zs=LEVEL.zones||[];
+    let zi=-1;
+    for(let k=0;k<zs.length;k++){ const z=zs[k]; if(zoneBlock(z)==="ramp"&&z.shape!=="circle"&&mx>=z.x-z.w/2&&mx<=z.x+z.w/2&&my>=z.y-z.h/2&&my<=z.y+z.h/2){zi=k;break;} }
+    if(zi>=0){
+      const z=zs[zi], along=aisleAxis(z)==="x"?mx:my;
+      const hit=ramps.findIndex(r=>r.zi===zi && Math.abs(r.along-along)<=LEVEL.rampW/2);
+      if(hit>=0) ramps.splice(hit,1); else ramps.push({zi,along});
+      redrawCables(); updateHUD(); return;
+    }
+    drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
+  }
+  if(mode==="rx"){                                      // colocar/mover el RX de la cámara inalámbrica más cercana
+    const p=toSvg(e), mx=p.x/S, my=p.y/S;
+    let ci=-1,bd=1e9;
+    cams.forEach((c,i)=>{ if(c.wireless){ const d=Math.hypot(mx-c.x,my-c.y); if(d<bd){bd=d;ci=i;} } });
+    if(ci>=0){ rx[ci]={x:mx,y:my}; redrawCables(); updateHUD(); return; }
+    drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
+  }
+  if(mode==="dec"){                                     // poner/quitar Decimator en la cámara más cercana
+    const p=toSvg(e), mx=p.x/S, my=p.y/S;
+    let ci=-1,bd=1e9;
+    cams.forEach((c,i)=>{ const d=Math.hypot(mx-c.x,my-c.y); if(d<bd){bd=d;ci=i;} });
+    if(ci>=0){ camDec[ci]=!camDec[ci]; redrawCables(); updateHUD(); return; }
+    drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty}; return;
+  }
+  if(t.classList.contains("outport")){                  // nuevo cable (desde la cámara, o desde su RX si es inalámbrica)
+    const ci=+t.dataset.cam;
+    if(cables[ci]){cables[ci]=null;redrawCables();updateHUD();}
+    const p=cams[ci].wireless?rx[ci]:cams[ci].port;
+    drag={kind:"new",ci,line:el("line",{x1:m(p.x),y1:m(p.y),x2:m(p.x),y2:m(p.y),stroke:css(LEVEL.cableTypes[curType].color),"stroke-width":3,"stroke-dasharray":"6 5",opacity:.8},gTemp)};
+  }else if(t.classList.contains("wp")){
+    drag={kind:"wp",ci:+t.dataset.cam,wp:+t.dataset.wp,moved:false,sx:e.clientX,sy:e.clientY};
+  }else if(t.classList.contains("seg")){
+    const ci=+t.dataset.cam, seg=+t.dataset.seg, p=toSvg(e);
+    cables[ci].wps.splice(seg,0,{x:p.x/S,y:p.y/S});
+    drag={kind:"wp",ci,wp:seg,moved:true,sx:e.clientX,sy:e.clientY};
+    redrawCables(); updateHUD();
+  }else{
+    drag={kind:"pan",sx:e.clientX,sy:e.clientY,tx0:zoom.tx,ty0:zoom.ty};
+  }
 });
+
+svg.addEventListener("pointermove",e=>{
+  if(pointers.has(e.pointerId)) pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch){ updatePinch(); return; }
+  if(!drag)return;
+  if(drag.kind==="new"){ const p=toSvg(e); drag.line.setAttribute("x2",p.x); drag.line.setAttribute("y2",p.y); }
+  else if(drag.kind==="pan"){ const a=toVB(drag.sx,drag.sy), b=toVB(e.clientX,e.clientY); zoom.tx=drag.tx0+(b.x-a.x); zoom.ty=drag.ty0+(b.y-a.y); applyZoom(); }
+  else if(drag.kind==="movecam"){ const p=toSvg(e), P=LEVEL.planoM, c=cams[drag.ci], a=c.area||LEVEL.camArea;
+    let nx=p.x/S, ny=p.y/S;
+    if(a){ nx=Math.max(a.x-a.w/2,Math.min(a.x+a.w/2,nx)); ny=Math.max(a.y-a.h/2,Math.min(a.y+a.h/2,ny)); }
+    else { nx=Math.max(2,Math.min(P.w-2,nx)); ny=Math.max(2,Math.min(P.h-2,ny)); }
+    if(!inHardZone(nx,ny)){ c.x=nx; c.y=ny; c.port={x:nx+3,y:ny}; drawStatic(); redrawCables(); updateHUD(); } }
+  else{ if(Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>6)drag.moved=true; const p=toSvg(e); cables[drag.ci].wps[drag.wp]={x:p.x/S,y:p.y/S}; redrawCables(); updateHUD(); }
+});
+
+function endPointer(e){
+  const wasPinch=!!pinch;
+  pointers.delete(e.pointerId);
+  if(wasPinch){
+    if(pointers.size<2) pinch=null;
+    if(pointers.size===1){ const [only]=[...pointers.values()]; drag={kind:"pan",sx:only.x,sy:only.y,tx0:zoom.tx,ty0:zoom.ty}; } else drag=null;
+    return;
+  }
+  if(!drag)return;
+  if(drag.kind==="new"){
+    const p=toSvg(e); let best=-1,bd=1e9;
+    inputs.forEach((ip,i)=>{ if(usedInputs().includes(i))return; const d=Math.hypot(p.x-m(ip.x),p.y-m(ip.y)); if(d<bd){bd=d;best=i;} });
+    if(best>=0 && bd<m(4)) cables[drag.ci]={input:best,type:curType,wps:[]};
+    gTemp.innerHTML="";
+  }else if(drag.kind==="wp" && !drag.moved){ cables[drag.ci].wps.splice(drag.wp,1); }
+  drag=null; redrawCables(); updateHUD();
+}
+svg.addEventListener("pointerup",endPointer);
+svg.addEventListener("pointercancel",endPointer);
+svg.addEventListener("wheel",e=>{
+  if(!LEVEL)return;
+  e.preventDefault();
+  const mv=toVB(e.clientX,e.clientY), L={x:(mv.x-zoom.tx)/zoom.k, y:(mv.y-zoom.ty)/zoom.k};
+  zoom.k=Math.max(1,Math.min(6, zoom.k*(e.deltaY<0?1.12:1/1.12)));
+  zoom.tx=mv.x-zoom.k*L.x; zoom.ty=mv.y-zoom.k*L.y; applyZoom();
+},{passive:false});
+
+/* ============================================================
+   HUD + VALIDACIÓN
+   ============================================================ */
+function totals(){
+  let conn=0,total=0,convs=0,cost=0,allOk=true;
+  cables.forEach((c,ci)=>{
+    if(!c){allOk=false;return;}
+    conn++;
+    const ct=LEVEL.cableTypes[c.type], len=pathLen(ci);
+    const fmtOk=(ct.signal===effOut(ci) && ct.signal===effIn(c.input));
+    total+=len; convs+=ct.conv; cost+=len*ct.eurM+ct.conv*LEVEL.convEur;
+    if(len>ct.limite||cableCross(ci)||!fmtOk||resProblem(ci,ct)!==null)allOk=false;
+  });
+  camConv.forEach(k=>{if(k){convs++;cost+=LEVEL.converters[k].eur;}});
+  inConv.forEach(k=>{if(k){convs++;cost+=LEVEL.converters[k].eur;}});
+  cost+=ramps.length*LEVEL.rampEur;
+  cams.forEach((c,ci)=>{ if(c.wireless && rx[ci]) cost+=c.txEur; });   // par TX+RX de cada inalámbrica colocada
+  camDec.forEach(d=>{ if(d) cost+=(LEVEL.decEur||250); });             // Decimator por cámara
+  return {conn,total,convs,cost,allOk,within:cost<=LEVEL.budget,ramps:ramps.length};
+}
+function updateHUD(){
+  const t=totals();
+  document.getElementById("s-conn").textContent=`${t.conn} / ${cams.length}`;
+  document.getElementById("s-total").textContent=`${t.total.toFixed(0)} m`;
+  document.getElementById("s-conv").textContent=`${t.convs}`;
+  document.getElementById("s-ramps").textContent=`${t.ramps}`;
+  document.getElementById("s-budget").textContent=`${t.cost.toFixed(0)} / ${LEVEL.budget} €`;
+}
+function validate(){
+  const problemas=[];
+  cams.forEach((cam,ci)=>{
+    const name=cam.id, c=cables[ci];
+    if(cam.wireless){                                   // cámara inalámbrica: RX colocado y en alcance
+      if(!rx[ci]){ problemas.push(tr('m_norx')(name)); return; }
+      const dRF=dist(cam,rx[ci]);
+      if(dRF>cam.range) problemas.push(tr('m_range')(name, dRF.toFixed(0), cam.range));
+    }
+    if(!c){ problemas.push(tr('m_notconn')(name)); return; }
+    const ct=LEVEL.cableTypes[c.type], len=pathLen(ci);
+    if(crossHard(ci)) problemas.push(tr('m_hard')(name));
+    if(crossAisleBare(ci)) problemas.push(tr('m_aisle')(name));
+    if(len>ct.limite) problemas.push(tr('m_len')(name, len.toFixed(0), tcable(ct.nombre), ct.limite));
+    const cvc=camConv[ci]&&LEVEL.converters[camConv[ci]];
+    if(cvc && cvc.from!==cams[ci].out) problemas.push(tr('m_convcam')(name, cvc.nombre, cvc.from.toUpperCase(), cams[ci].out.toUpperCase()));
+    const cvi=inConv[c.input]&&LEVEL.converters[inConv[c.input]];
+    if(cvi && cvi.to!==inFmtOf(c.input)) problemas.push(tr('m_convin')(name, cvi.nombre, cvi.to.toUpperCase(), inFmtOf(c.input).toUpperCase()));
+    const eo=effOut(ci), ei=effIn(c.input);
+    if(eo && ei){
+      if(ct.signal!==eo) problemas.push(tr('m_fmtcam')(name, eo.toUpperCase(), ct.signal.toUpperCase()));
+      else if(ct.signal!==ei) problemas.push(tr('m_fmtin')(name, tcable(ct.nombre), ct.signal.toUpperCase(), ei.toUpperCase()));
+    }
+    const rp=resProblem(ci,ct);
+    if(rp==="cable") problemas.push(tr('m_res4k')(name, tcable(ct.nombre)));
+    else if(rp==="mesa") problemas.push(tr('m_resmesa')(name, effRes(ci).toUpperCase(), mesaRes().toUpperCase()));
+  });
+  const t=totals();
+  if(t.cost>LEVEL.budget) problemas.push(tr('m_budget')(t.cost.toFixed(0), LEVEL.budget));
+
+  locked=true; redrawCables();
+  const ok=problemas.length===0;
+  const k=document.getElementById("win-k");
+  k.textContent=ok?tr('valid_k'):tr('invalid_k');
+  k.style.color=ok?css("--cyan"):css("--red");
+  document.getElementById("win-h").textContent=ok?tr('valid_h'):tr('invalid_h');
+  const res=document.getElementById("win-res");
+  if(ok){
+    const sobra=LEVEL.budget-t.cost;
+    res.innerHTML=`<div class="good">${tr('w_ok')(cams.length)}</div><br>`+
+      tr('w_cost')(t.cost.toFixed(0), t.total.toFixed(0), t.convs)+`<br>`+
+      tr('w_score')(sobra.toFixed(0));
+  }else{
+    res.innerHTML=problemas.map(p=>`<div class="bad">• ${p}</div>`).join("");
+  }
+  document.getElementById("win").classList.add("show");
+}
+
+/* ============================================================
+   INVENTARIO
+   ============================================================ */
+function buildInv(){
+  const cablesBox=document.getElementById("inv"); cablesBox.innerHTML="";
+  Object.entries(LEVEL.cableTypes).forEach(([key,ct])=>{
+    const b=document.createElement("button");
+    b.className="invbtn"; b.dataset.kind="cable"; b.dataset.key=key;
+    b.innerHTML=`<span><span class="nm">${tcable(ct.nombre)}</span><span class="meta">${ct.eurM} €/m${ct.conv?` · ${ct.conv} conv.`:``}</span></span><span class="dot" style="background:var(${ct.color})"></span>`;
+    b.addEventListener("click",()=>{mode="cable";curType=key;refreshInv();});
+    cablesBox.appendChild(b);
+  });
+  const convBox=document.getElementById("convs"); convBox.innerHTML="";
+  Object.entries(LEVEL.converters).forEach(([key,cv])=>{
+    const b=document.createElement("button");
+    b.className="invbtn"; b.dataset.kind="conv"; b.dataset.key=key;
+    b.innerHTML=`<span><span class="nm">${cv.nombre}</span><span class="meta">${cv.eur} ${tr('meta_conv')}</span></span><span class="dot" style="background:var(--txt)"></span>`;
+    b.addEventListener("click",()=>{mode="conv";curConv=key;refreshInv();});
+    convBox.appendChild(b);
+  });
+  const elemBox=document.getElementById("elems"); elemBox.innerHTML="";
+  const hasRamp=(LEVEL.zones||[]).some(z=>zoneBlock(z)==="ramp");
+  const hasWireless=cams.some(c=>c.wireless);
+  if(hasRamp){
+    const rb=document.createElement("button");
+    rb.className="invbtn"; rb.dataset.kind="ramp"; rb.dataset.key="ramp";
+    rb.innerHTML=`<span><span class="nm">${tr('ramp_name')}</span><span class="meta">${LEVEL.rampEur} ${tr('meta_ramp')}</span></span><span class="dot" style="background:var(--amber)"></span>`;
+    rb.addEventListener("click",()=>{mode="ramp";refreshInv();});
+    elemBox.appendChild(rb);
+  }
+  if(hasWireless){
+    const wb=document.createElement("button");
+    wb.className="invbtn"; wb.dataset.kind="rx"; wb.dataset.key="rx";
+    wb.innerHTML=`<span><span class="nm">${tr('rx_name')}</span><span class="meta">${tr('meta_rx')}</span></span><span class="dot" style="background:var(--amber)"></span>`;
+    wb.addEventListener("click",()=>{mode="rx";refreshInv();});
+    elemBox.appendChild(wb);
+  }
+  const hasDec = cams.some(c=>c.res) || mesaRes()!=="hd";
+  if(hasDec){
+    const db=document.createElement("button");
+    db.className="invbtn"; db.dataset.kind="dec"; db.dataset.key="dec";
+    db.innerHTML=`<span><span class="nm">${tr('dec_name')}</span><span class="meta">${LEVEL.decEur||250} ${tr('meta_dec')}</span></span><span class="dot" style="background:var(--fiber)"></span>`;
+    db.addEventListener("click",()=>{mode="dec";refreshInv();});
+    elemBox.appendChild(db);
+  }
+  // ocultar secciones que este nivel no usa
+  document.getElementById("convBlock").style.display = Object.keys(LEVEL.converters).length ? "" : "none";
+  document.getElementById("elemBlock").style.display = (hasRamp||hasWireless||hasDec) ? "" : "none";
+  refreshInv();
+}
+function refreshInv(){
+  document.querySelectorAll(".invbtn").forEach(b=>{
+    const kind=b.dataset.kind, key=b.dataset.key;
+    const on=(kind==="cable"&&mode==="cable"&&key===curType)||(kind==="conv"&&mode==="conv"&&key===curConv)||(kind==="ramp"&&mode==="ramp")||(kind==="rx"&&mode==="rx")||(kind==="dec"&&mode==="dec");
+    const c=kind==="cable"?css(LEVEL.cableTypes[key].color):(kind==="dec"?css("--fiber"):(kind==="ramp"||kind==="rx")?css("--amber"):css("--txt"));
+    b.classList.toggle("on",on);
+    b.style.color=on?c:""; b.style.borderColor=on?c:"";
+  });
+}
+
+/* ============================================================
+   MENÚ + CARGA DE NIVEL
+   ============================================================ */
+function buildMenu(){
+  const box=document.getElementById("venues"); box.innerHTML="";
+  Object.entries(GAME).forEach(([vid,v])=>{
+    const card=document.createElement("div");
+    card.className="venue"+(v.soon?" soon":"");
+    card.innerHTML=`<h3>${tvenue(vid)}</h3><div class="sub">${pick(v.sub)||""}</div>`;
+    if(v.soon){ const s=document.createElement("div"); s.className="soonlbl"; s.textContent=tr('soon'); card.appendChild(s); }
+    else v.niveles.forEach((lv,idx)=>{ const b=document.createElement("button"); b.className="lvl"; b.textContent=pick(lv.nombre); b.addEventListener("click",()=>cargarNivel(vid,idx)); card.appendChild(b); });
+    box.appendChild(card);
+  });
+}
+function cargarNivel(vid,idx){
+  LEVEL=GAME[vid].niveles[idx];
+  S=LEVEL.escalaPxM;
+  VBW=m(LEVEL.planoM.w); VBH=m(LEVEL.planoM.h);
+  svg.setAttribute("viewBox",`0 0 ${VBW} ${VBH}`);
+  inputs=[]; { const n=nInputs(), faces=LEVEL.mesa.faces||"top";
+    for(let i=0;i<n;i++) inputs.push(faces==="left"
+      ? {x:LEVEL.mesa.x-8, y:LEVEL.mesa.y+(i-(n-1)/2)*6}
+      : {x:LEVEL.mesa.x+(i-(n-1)/2)*6, y:LEVEL.mesa.y-4}); }
+  cams=LEVEL.cams.map(c=>({...c, port:{x:c.x+3, y:c.y}}));   // salida por detrás de la cámara
+  cables=new Array(cams.length).fill(null);
+  camConv=new Array(cams.length).fill(null);
+  inConv=new Array(inputs.length).fill(null);
+  ramps=[]; rx={}; camDec=new Array(cams.length).fill(false); curType=Object.keys(LEVEL.cableTypes)[0]; curConv=null; mode="cable"; locked=false;
+  zoom.k=1; zoom.tx=0; zoom.ty=0; applyZoom();
+  document.getElementById("nivel").textContent=pick(LEVEL.nombre);
+  document.getElementById("encargo").textContent=pick(LEVEL.encargo);
+  document.getElementById("win").classList.remove("show");
+  buildInv(); drawStatic(); redrawCables(); updateHUD();
+  document.getElementById("menu").classList.remove("show");
+}
+function reset(){
+  if(!LEVEL)return;
+  cables=new Array(cams.length).fill(null);
+  camConv=new Array(cams.length).fill(null);
+  inConv=new Array(inputs.length).fill(null);
+  ramps.length=0; rx={}; camDec=new Array(cams.length).fill(false); locked=false;
+  document.getElementById("win").classList.remove("show");
+  redrawCables(); updateHUD();
+}
+
+function applyLang(){
+  document.querySelectorAll("[data-i18n]").forEach(e=>{ e.textContent=tr(e.dataset.i18n); });
+  document.getElementById("hint").innerHTML=tr("hint");
+  document.querySelectorAll(".langbtn").forEach(b=>b.classList.toggle("on", b.dataset.lang===LANG));
+  buildMenu();
+  if(LEVEL){                                   // re-renderiza el nivel cargado en el nuevo idioma
+    document.getElementById("nivel").textContent=pick(LEVEL.nombre);
+    document.getElementById("encargo").textContent=pick(LEVEL.encargo);
+    buildInv(); drawStatic(); redrawCables(); updateHUD();
+  }
+}
+function setLang(l){ LANG=l; try{localStorage.setItem("realiz_lang",l);}catch(_){} applyLang(); }
+
+document.getElementById("reset").addEventListener("click",reset);
+document.getElementById("win-again").addEventListener("click",reset);
+document.getElementById("validate").addEventListener("click",()=>{if(LEVEL)validate();});
+document.getElementById("win-review").addEventListener("click",()=>document.getElementById("win").classList.remove("show"));
+document.getElementById("tomenu").addEventListener("click",()=>document.getElementById("menu").classList.add("show"));
+document.querySelectorAll(".langbtn").forEach(b=>b.addEventListener("click",()=>setLang(b.dataset.lang)));
+applyLang();
 </script>
 </body>
 </html>

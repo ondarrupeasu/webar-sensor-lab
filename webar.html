@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>WEBAR · Sensor Lab — CIFP Tartanga</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  :root{
+    --bg:#0a0e0d;
+    --panel:#0f1513;
+    --line:#1c2926;
+    --amber:#ffb427;      /* tally / rec */
+    --cyan:#3fe0d0;        /* señal activa */
+    --dim:#5c6b67;
+    --txt:#e8f0ee;
+    --grid:rgba(63,224,208,.09);
+    --mono:'SF Mono',ui-monospace,'Roboto Mono',Menlo,Consolas,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--mono);overflow:hidden;-webkit-user-select:none;user-select:none}
+  #stage{position:fixed;inset:0}
+  video,#gl{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  #gl{z-index:2}
+  video{z-index:1;filter:saturate(.85) contrast(1.05)}
+  body.no-cam video{display:none}
+  body.no-cam #stage{background:
+    radial-gradient(circle at 50% 40%, #12201d 0%, var(--bg) 70%);}
+
+  /* ---- HUD viewfinder ---- */
+  #hud{position:fixed;inset:0;z-index:5;pointer-events:none}
+  .corner{position:absolute;width:34px;height:34px;border:2px solid var(--cyan);opacity:.85}
+  .corner.tl{top:20px;left:20px;border-right:0;border-bottom:0}
+  .corner.tr{top:20px;right:20px;border-left:0;border-bottom:0}
+  .corner.bl{bottom:20px;left:20px;border-right:0;border-top:0}
+  .corner.br{bottom:20px;right:20px;border-left:0;border-top:0}
+
+  .topbar{position:absolute;top:26px;left:64px;right:64px;display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:.14em}
+  .rec{display:flex;align-items:center;gap:7px;color:var(--amber)}
+  .rec .dot{width:9px;height:9px;border-radius:50%;background:var(--amber);animation:blink 1.1s steps(2,end) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .tc{color:var(--txt);opacity:.9;font-variant-numeric:tabular-nums}
+
+  .reticle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:1px;height:1px}
+  .reticle::before,.reticle::after{content:"";position:absolute;background:var(--cyan);opacity:.5}
+  .reticle::before{width:26px;height:1px;left:-13px}
+  .reticle::after{height:26px;width:1px;top:-13px}
+
+  /* ---- telemetría giroscopio ---- */
+  #tele{position:absolute;left:26px;bottom:70px;font-size:10.5px;line-height:1.65;letter-spacing:.08em;color:var(--dim)}
+  #tele b{color:var(--cyan);font-weight:400}
+  #tele .v{color:var(--txt);display:inline-block;min-width:62px;text-align:right}
+
+  /* ---- controles ---- */
+  #dock{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;gap:1px;background:var(--line);padding-top:1px}
+  .tab{flex:1;background:var(--panel);color:var(--dim);border:0;padding:16px 8px 22px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;transition:.18s}
+  .tab.on{color:var(--cyan);background:#0c1614;box-shadow:inset 0 2px 0 var(--cyan)}
+  .tab:active{background:#0c1614}
+
+  /* ---- gate / permisos ---- */
+  #gate{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center}
+  #gate .eyebrow{font-size:11px;letter-spacing:.3em;color:var(--amber);margin-bottom:18px}
+  #gate h1{font-size:23px;font-weight:400;letter-spacing:.02em;line-height:1.25;margin-bottom:14px;max-width:440px}
+  #gate h1 span{color:var(--cyan)}
+  #gate p{font-size:12.5px;line-height:1.7;color:var(--dim);max-width:400px;margin-bottom:30px}
+  #gate .apis{display:flex;gap:22px;margin-bottom:34px;flex-wrap:wrap;justify-content:center}
+  #gate .api{font-size:10px;letter-spacing:.1em;color:var(--dim)}
+  #gate .api b{display:block;color:var(--txt);font-size:15px;margin-bottom:3px}
+  #go{pointer-events:auto;background:transparent;color:var(--cyan);border:1.5px solid var(--cyan);padding:15px 40px;font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:.2s}
+  #go:active{background:var(--cyan);color:var(--bg)}
+  .foot{position:absolute;bottom:24px;font-size:9.5px;letter-spacing:.15em;color:var(--line);color:#2a3936}
+
+  #msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:8;font-size:11px;letter-spacing:.12em;color:var(--amber);text-align:center;pointer-events:none;text-shadow:0 0 8px rgba(0,0,0,.8)}
+  @media (prefers-reduced-motion: reduce){.rec .dot{animation:none}}
+</style>
+</head>
+<body class="no-cam">
+
+<div id="stage">
+  <video id="cam" autoplay muted playsinline></video>
+  <canvas id="gl"></canvas>
+</div>
+
+<div id="hud">
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
+  <div class="topbar">
+    <div class="rec"><span class="dot"></span> SENSOR LAB</div>
+    <div class="tc" id="tc">00:00:00:00</div>
+  </div>
+  <div class="reticle"></div>
+  <div id="tele">
+    <div><b>IMU · DeviceOrientation</b></div>
+    <div>α yaw&nbsp;&nbsp;<span class="v" id="oa">—</span>°</div>
+    <div>β pitch <span class="v" id="ob">—</span>°</div>
+    <div>γ roll&nbsp;&nbsp;<span class="v" id="og">—</span>°</div>
+    <div id="dbg" style="margin-top:8px;color:var(--amber);font-size:9px;max-width:60vw;line-height:1.5">esperando sensor…</div>
+  </div>
+</div>
+
+<div id="msg"></div>
+
+<div id="dock">
+  <button class="tab on" data-mode="ficha">Ficha 3D</button>
+  <button class="tab" data-mode="voxel">Selfie voxel</button>
+  <button class="tab" data-mode="grid">Retícula</button>
+</div>
+
+<div id="gate">
+  <div class="eyebrow">CIFP TARTANGA · IMAGEN Y SONIDO</div>
+  <h1>Las tres APIs que mueven la web de <span>Kinder</span>, sin SDK ni marcadores.</h1>
+  <p>Esta demo usa solo estándares del navegador. Enfoca con la cámara, mueve el móvil para orbitar la ficha técnica y prueba el modo selfie cubizado. Requiere HTTPS y permiso de cámara + sensores.</p>
+  <div class="apis">
+    <div class="api"><b>getUserMedia</b>MediaDevices</div>
+    <div class="api"><b>DeviceOrientation</b>Giroscopio / IMU</div>
+    <div class="api"><b>WebGL</b>Three.js r128</div>
+  </div>
+  <button id="go">Iniciar sensores</button>
+  <div class="foot">WEBAR SENSOR LAB · v1.0 · GITHUB PAGES READY</div>
+</div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const msg=(t)=>{const m=$("#msg");m.textContent=t||"";};
+let MODE="ficha";
+let orient={a:0,b:0,g:0};      // valores crudos del sensor
+let smooth={a:0,b:0,g:0};      // suavizados para el render
+let sensorLive=false;          // ¿el giroscopio emite datos?
+let drag={on:false,x:0,y:0,rx:0,ry:0}; // fallback táctil si no hay sensor
+
+/* ---------- 1. CÁMARA · getUserMedia ---------- */
+async function startCamera(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},
+      audio:false
+    });
+    $("#cam").srcObject=stream;
+    document.body.classList.remove("no-cam");
+    return true;
+  }catch(e){
+    // sin cámara la demo sigue: fondo sintético. Es un fallback, no un error fatal.
+    document.body.classList.add("no-cam");
+    msg("SIN CÁMARA · MODO FONDO SINTÉTICO");
+    setTimeout(()=>msg(""),2600);
+    return false;
+  }
+}
+
+/* ---------- 2. GIROSCOPIO · DeviceOrientation ---------- */
+let evtCount=0;              // nº de eventos recibidos (diagnóstico)
+let dbgLine="";             // texto de diagnóstico en pantalla
+function dbg(t){dbgLine=t;$("#dbg").textContent=t;}
+
+async function startOrientation(){
+  const hasReq=(typeof DeviceOrientationEvent!=="undefined" &&
+                typeof DeviceOrientationEvent.requestPermission==="function");
+  let permState="n/a";      // en Android normalmente no hay requestPermission
+  if(hasReq){
+    try{
+      permState=await DeviceOrientationEvent.requestPermission();
+    }catch(e){permState="error:"+e.name;}
+  }
+
+  const onOrient=(ev)=>{
+    evtCount++;
+    // beta/gamma son los ejes que usamos para rotar. En iOS pueden llegar
+    // sin alpha; en Android a veces solo llegan vía 'deviceorientationabsolute'.
+    const hasBG=(ev.beta!=null || ev.gamma!=null);
+    if(hasBG){
+      sensorLive=true;
+      const b=(ev.beta ==null?0:ev.beta);
+      const g=(ev.gamma==null?0:ev.gamma);
+      let a=ev.alpha;
+      if(a==null && typeof ev.webkitCompassHeading==="number") a=360-ev.webkitCompassHeading;
+      if(a==null) a=0;
+      orient.a=a; orient.b=b; orient.g=g;
+      $("#oa").textContent=a.toFixed(1);
+      $("#ob").textContent=b.toFixed(1);
+      $("#og").textContent=g.toFixed(1);
+    }
+    // diagnóstico en vivo: se ve si llegan eventos pero sin datos útiles
+    dbg(`evt:${evtCount} perm:${permState} a:${ev.alpha==null?"·":"ok"} `+
+        `b:${ev.beta==null?"·":"ok"} g:${ev.gamma==null?"·":"ok"} abs:${ev.absolute?"y":"n"}`);
+  };
+
+  window.addEventListener("deviceorientation",onOrient);          // sin capture
+  window.addEventListener("deviceorientationabsolute",onOrient);
+
+  // Reintento de permiso: en iOS, si el 1er requestPermission no disparó
+  // eventos (toggle "Movimiento y orientación" off), avisamos con causa.
+  setTimeout(()=>{
+    if(evtCount===0){
+      if(hasReq && permState==="granted"){
+        dbg("permiso OK pero 0 eventos → Ajustes › Safari › Movimiento y orientación");
+        msg("SENSOR BLOQUEADO EN AJUSTES · usa arrastre");
+      }else if(hasReq && permState!=="granted"){
+        dbg("permiso: "+permState);
+        msg("PERMISO DE SENSOR DENEGADO · usa arrastre");
+      }else{
+        dbg("0 eventos · sin requestPermission (Android)");
+        msg("SIN GIROSCOPIO · usa arrastre táctil");
+      }
+      setTimeout(()=>msg(""),3600);
+    }else if(!sensorLive){
+      // llegan eventos pero beta/gamma null → caso Chrome que describes
+      dbg(`${evtCount} eventos pero beta/gamma null → sensor no expone orientación`);
+      msg("SENSOR SIN ORIENTACIÓN · usa arrastre");
+      setTimeout(()=>msg(""),3600);
+    }
+  },1400);
+}
+
+/* ---------- 3. ESCENA 3D · WebGL / Three.js ---------- */
+const glCanvas=$("#gl");
+const renderer=new THREE.WebGLRenderer({canvas:glCanvas,alpha:true,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(42,1,0.1,100);
+camera.position.set(0,0,6);
+
+const key=new THREE.DirectionalLight(0xffffff,1.1); key.position.set(3,4,5); scene.add(key);
+const rim=new THREE.DirectionalLight(0x3fe0d0,0.7); rim.position.set(-4,-2,-3); scene.add(rim);
+scene.add(new THREE.AmbientLight(0x223330,0.9));
+
+const world=new THREE.Group(); scene.add(world);
+
+/* --- objeto A: "ficha técnica" flotante (tarjeta + wireframe) --- */
+const ficha=new THREE.Group();
+const card=new THREE.Mesh(
+  new THREE.BoxGeometry(3.1,1.9,0.06),
+  new THREE.MeshStandardMaterial({color:0x0f1513,metalness:.3,roughness:.55})
+);
+ficha.add(card);
+const edge=new THREE.LineSegments(
+  new THREE.EdgesGeometry(new THREE.BoxGeometry(3.14,1.94,0.1)),
+  new THREE.LineBasicMaterial({color:0x3fe0d0})
+);
+ficha.add(edge);
+// "lente" que sobresale de la tarjeta — guiño audiovisual
+const lens=new THREE.Mesh(
+  new THREE.CylinderGeometry(0.42,0.5,0.55,40),
+  new THREE.MeshStandardMaterial({color:0x090c0b,metalness:.8,roughness:.25})
+);
+lens.rotation.x=Math.PI/2; lens.position.set(-0.95,0,0.35);
+ficha.add(lens);
+const ring=new THREE.Mesh(
+  new THREE.TorusGeometry(0.44,0.03,12,40),
+  new THREE.MeshStandardMaterial({color:0xffb427,metalness:.6,roughness:.3})
+);
+ring.position.set(-0.95,0,0.6);
+ficha.add(ring);
+world.add(ficha);
+
+/* --- objeto B: nube voxel para el modo "selfie" (cubización) --- */
+const voxels=new THREE.Group();
+const vGeo=new THREE.BoxGeometry(0.34,0.34,0.34);
+for(let i=0;i<160;i++){
+  const m=new THREE.Mesh(vGeo,new THREE.MeshStandardMaterial({
+    color:new THREE.Color().setHSL(0.48+Math.random()*0.08,0.6,0.4+Math.random()*0.3),
+    metalness:.2,roughness:.7
+  }));
+  const r=1.6+Math.random()*0.9, th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
+  m.position.set(r*Math.sin(ph)*Math.cos(th), r*Math.sin(ph)*Math.sin(th)-0.2, r*Math.cos(ph));
+  m.userData.spin=(Math.random()-0.5)*0.02;
+  voxels.add(m);
+}
+voxels.visible=false; world.add(voxels);
+
+/* --- objeto C: retícula técnica (grid + ejes) --- */
+const gridG=new THREE.Group();
+const grid=new THREE.GridHelper(8,16,0x3fe0d0,0x18302c);
+grid.rotation.x=Math.PI/2; gridG.add(grid);
+const axes=new THREE.AxesHelper(2.4); gridG.add(axes);
+gridG.visible=false; world.add(gridG);
+
+function setMode(m){
+  MODE=m;
+  ficha.visible=(m==="ficha");
+  voxels.visible=(m==="voxel");
+  gridG.visible=(m==="grid");
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.mode===m));
+}
+document.querySelectorAll(".tab").forEach(t=>
+  t.addEventListener("click",()=>setMode(t.dataset.mode)));
+
+/* ---------- resize ---------- */
+function resize(){
+  const w=window.innerWidth,h=window.innerHeight;
+  renderer.setSize(w,h,false);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+window.addEventListener("resize",resize); resize();
+
+/* ---------- timecode ---------- */
+let f=0;
+setInterval(()=>{
+  f++;const tf=f%25,s=Math.floor(f/25)%60,mn=Math.floor(f/1500)%60,hh=Math.floor(f/90000)%24;
+  const p=n=>String(n).padStart(2,"0");
+  $("#tc").textContent=`${p(hh)}:${p(mn)}:${p(s)}:${p(tf)}`;
+},40);
+
+/* ---------- loop ---------- */
+function loop(){
+  requestAnimationFrame(loop);
+  if(sensorLive){
+    // suavizado exponencial del sensor → evita jitter en el render
+    smooth.b+=(orient.b-smooth.b)*0.12;
+    smooth.g+=(orient.g-smooth.g)*0.12;
+    // mapeo IMU → rotación de la escena (orbitar moviendo el móvil)
+    world.rotation.y=THREE.MathUtils.degToRad(smooth.g)*1.4;
+    world.rotation.x=THREE.MathUtils.degToRad(smooth.b-45)*0.6;
+  }else{
+    // fallback: rotación por arrastre táctil
+    world.rotation.y+=(drag.ry-world.rotation.y)*0.15;
+    world.rotation.x+=(drag.rx-world.rotation.x)*0.15;
+  }
+
+  ficha.position.y=Math.sin(Date.now()*0.0012)*0.12;   // flotación
+  ring.rotation.z+=0.01;
+  if(voxels.visible){voxels.rotation.y+=0.004;voxels.children.forEach(v=>v.rotation.x+=v.userData.spin);}
+  renderer.render(scene,camera);
+}
+loop();
+
+/* ---------- fallback táctil (si no hay giroscopio) ---------- */
+const stage=$("#stage");
+function dragStart(x,y){drag.on=true;drag.x=x;drag.y=y;}
+function dragMove(x,y){
+  if(!drag.on||sensorLive)return;
+  drag.ry+=(x-drag.x)*0.008;
+  drag.rx+=(y-drag.y)*0.008;
+  drag.x=x;drag.y=y;
+}
+function dragEnd(){drag.on=false;}
+stage.addEventListener("touchstart",e=>{const t=e.touches[0];dragStart(t.clientX,t.clientY);},{passive:true});
+stage.addEventListener("touchmove",e=>{const t=e.touches[0];dragMove(t.clientX,t.clientY);},{passive:true});
+stage.addEventListener("touchend",dragEnd);
+stage.addEventListener("mousedown",e=>dragStart(e.clientX,e.clientY));
+window.addEventListener("mousemove",e=>dragMove(e.clientX,e.clientY));
+window.addEventListener("mouseup",dragEnd);
+
+/* ---------- arranque tras gesto ---------- */
+$("#go").addEventListener("click",async()=>{
+  $("#gate").style.display="none";
+  // El permiso de orientación DEBE pedirse primero, mientras la activación
+  // de usuario (transient activation) del clic sigue viva. getUserMedia
+  // suspende la ejecución esperando su propio diálogo y consumiría esa
+  // ventana, provocando que requestPermission() devuelva 'denied' sin
+  // llegar a mostrarse. Orden correcto: sensores → cámara.
+  await startOrientation();
+  await startCamera();
+  setMode("ficha");
+});
+</script>
+</body>
+</html>
